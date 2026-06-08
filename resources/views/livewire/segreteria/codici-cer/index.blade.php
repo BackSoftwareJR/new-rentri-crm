@@ -7,6 +7,12 @@
             <p>Catalogo codici europei dei rifiuti e giacenze magazzino.</p>
         </div>
         <div class="seg-header-actions">
+            @can('codice-cer.sync-rentri')
+                <button type="button" class="seg-btn seg-btn-secondary" wire:click="syncDaRentri" wire:loading.attr="disabled" wire:confirm="Aggiornare il catalogo CER da RENTRI?">
+                    <span wire:loading.remove wire:target="syncDaRentri">Sincronizza da RENTRI</span>
+                    <span wire:loading wire:target="syncDaRentri">Sync in corso…</span>
+                </button>
+            @endcan
             <button type="button" class="seg-btn seg-btn-primary" wire:click="openCreate">+ Nuovo codice</button>
             <a href="{{ route('segreteria.codici-cer.create') }}" class="seg-btn seg-btn-secondary" wire:navigate>Pagina completa</a>
         </div>

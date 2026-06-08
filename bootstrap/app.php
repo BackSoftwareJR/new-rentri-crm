@@ -24,10 +24,13 @@ return Application::configure(basePath: dirname(__DIR__))
             'role_or_permission' => RoleOrPermissionMiddleware::class,
             'demo.scope' => \App\Http\Middleware\EnsureDemoModeScope::class,
             'two_factor.enforced' => \App\Http\Middleware\EnsureTwoFactorEnabled::class,
+            'shop.enabled' => \App\Http\Middleware\EnsureShopEnabled::class,
+            'sito.scope' => \App\Http\Middleware\ScopeToActiveSito::class,
         ]);
 
         $middleware->web(append: [
             \App\Http\Middleware\AssignRequestCorrelationId::class,
+            \App\Http\Middleware\SecurityHeaders::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

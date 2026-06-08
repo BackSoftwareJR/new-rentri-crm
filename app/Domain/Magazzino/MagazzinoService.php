@@ -115,7 +115,7 @@ class MagazzinoService
     {
         $query = DemoTrainingScope::applyMagazzinoCerFilter(
             CodiceCer::query()
-                ->with('magazzino')
+                ->with(['magazzino' => fn ($q) => $q->forActiveSito()])
                 ->where('attivo', true),
         );
 
@@ -180,7 +180,7 @@ class MagazzinoService
 
         $query = DemoTrainingScope::applyMagazzinoCerFilter(
             CodiceCer::query()
-                ->with('magazzino')
+                ->with(['magazzino' => fn ($q) => $q->forActiveSito()])
                 ->where('attivo', true),
             strictWhenEmpty: $restrictToDemoCer,
         );
@@ -285,6 +285,10 @@ class MagazzinoService
         $pct = $this->calcolaPercentuale($giacenza, $limite);
         $stato = $this->calcolaStatoSoglia($pct);
 
+        $sogliaMinima = $c->magazzino?->soglia_minima_kg !== null
+            ? (float) $c->magazzino->soglia_minima_kg
+            : null;
+
         return [
             'id'                      => $c->id,
             'codice'                  => $c->codice,
@@ -292,11 +296,40 @@ class MagazzinoService
             'categoria'               => $c->categoria,
             'um'                      => $c->um,
             'quantita_attuale_kg'     => $giacenza,
+            'soglia_minima_kg'        => $sogliaMinima,
+            'sotto_soglia_minima'     => $this->isSottoSogliaMinima($giacenza, $sogliaMinima),
             'limite_kg'               => $limite,
             'percentuale'             => $pct,
             'stato'                   => $stato,
             'data_ultimo_aggiornamento' => $c->magazzino?->updated_at,
         ];
+    }
+
+    public function isSottoSogliaMinima(float $giacenzaKg, ?float $sogliaMinimaKg): bool
+    {
+        if ($sogliaMinimaKg === null || $sogliaMinimaKg <= 0) {
+            return false;
+        }
+
+        return $giacenzaKg < $sogliaMinimaKg - 0.0001;
+    }
+
+    public function updateSogliaMinima(int $codiceCerId, ?float $sogliaMinimaKg): MagazzinoRifiuto
+    {
+        $cer = $this->findSerbatoio($codiceCerId);
+
+        $stock = MagazzinoRifiuto::query()->firstOrCreate(
+            ['codice_cer_id' => $cer->id],
+            ['quantita_attuale_kg' => 0],
+        );
+
+        $stock->update([
+            'soglia_minima_kg' => $sogliaMinimaKg !== null && $sogliaMinimaKg > 0
+                ? round($sogliaMinimaKg, 4)
+                : null,
+        ]);
+
+        return $stock->fresh();
     }
 
     public function statoBadgeVariant(string $stato): string
@@ -315,5 +348,47 @@ class MagazzinoService
             'attenzione' => 'Attenzione',
             default      => 'Regolare',
         };
+    }
+
+    /**
+     * Ensures a serbatoio (MagazzinoRifiuto row) exists for the given CER code.
+     * Creates it with giacenza = 0 if absent; skips if already present.
+     * Returns true if a new serbatoio was created, false if it already existed.
+     */
+    public function ensureSerbatoioExists(CodiceCer $cer): bool
+    {
+        $exists = MagazzinoRifiuto::query()
+            ->where('codice_cer_id', $cer->id)
+            ->exists();
+
+        if ($exists) {
+            return false;
+        }
+
+        MagazzinoRifiuto::create([
+            'codice_cer_id'       => $cer->id,
+            'quantita_attuale_kg' => 0,
+        ]);
+
+        return true;
+    }
+
+    /**
+     * Ensures serbatoi exist for all active CER codes.
+     * Returns the count of newly created serbatoi.
+     */
+    public function ensureSerbatoi(): int
+    {
+        $created = 0;
+
+        CodiceCer::query()
+            ->where('attivo', true)
+            ->each(function (CodiceCer $cer) use (&$created) {
+                if ($this->ensureSerbatoioExists($cer)) {
+                    $created++;
+                }
+            });
+
+        return $created;
     }
 }

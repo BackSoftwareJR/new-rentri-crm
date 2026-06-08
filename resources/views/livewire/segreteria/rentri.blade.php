@@ -203,7 +203,12 @@
                         @endforeach
                     </ul>
                     @unless ($conforme)
-                        <p class="seg-field-error" style="margin-top: 0.75rem;">Correggi gli elementi segnati KO prima di trasmettere.</p>
+                        <p class="seg-field-error" style="margin-top: 0.75rem;">
+                            @if (($movimentoErrorCount ?? 0) > 0)
+                                {{ $movimentoErrorCount }} moviment{{ $movimentoErrorCount === 1 ? 'o' : 'i' }} con errori di conformità.
+                            @endif
+                            Correggi gli elementi segnati KO prima di trasmettere.
+                        </p>
                     @endunless
                 </div>
 

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\TrasportoStato;
 use App\Models\Concerns\HasDemoScope;
+use App\Traits\BelongsToSito;
 use App\Support\Demo\DemoContext;
 use App\Support\Demo\DemoIsolationException;
 use Illuminate\Database\Eloquent\Model;
@@ -12,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Trasporto extends Model
 {
-    use HasDemoScope;
+    use BelongsToSito, HasDemoScope;
 
     protected $table = 'trasporti';
 
@@ -20,6 +21,12 @@ class Trasporto extends Model
         'magazzino_svuotamento_id',
         'codice_cer_id',
         'anagrafica_destinatario_id',
+        'anagrafica_trasportatore_id',
+        'targa_mezzo',
+        'conducente',
+        'data_trasporto',
+        'vfu_registration_id',
+        'fir_blocco_id',
         'quantita_kg',
         'peso_destinazione_kg',
         'stato',
@@ -46,7 +53,23 @@ class Trasporto extends Model
             'is_demo'              => 'boolean',
             'gps_last_position'    => 'array',
             'gps_tracked_at'       => 'datetime',
+            'data_trasporto'       => 'date',
         ];
+    }
+
+    public function trasportatore(): BelongsTo
+    {
+        return $this->belongsTo(Anagrafica::class, 'anagrafica_trasportatore_id');
+    }
+
+    public function vfuRegistration(): BelongsTo
+    {
+        return $this->belongsTo(VfuRegistration::class, 'vfu_registration_id');
+    }
+
+    public function firBlocco(): BelongsTo
+    {
+        return $this->belongsTo(FirBlocco::class, 'fir_blocco_id');
     }
 
     public function codiceCer(): BelongsTo

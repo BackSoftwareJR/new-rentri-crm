@@ -24,7 +24,9 @@ class AuditExportScheduledJob implements ShouldBeUnique, ShouldQueue
     public function __construct(
         public bool $dryRun = false,
         public ?int $triggeredBy = null,
-    ) {}
+    ) {
+        $this->onQueue('exports');
+    }
 
     public function uniqueId(): string
     {

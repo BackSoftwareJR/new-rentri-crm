@@ -59,6 +59,10 @@
                 <button type="submit" class="btn btn-primary btn-block">Accedi</button>
             </form>
 
+            <p style="margin-top: 1rem; text-align: center;">
+                <a href="{{ route('password.request') }}">Password dimenticata?</a>
+            </p>
+
             <p class="gest-login-footer">
                 <span style="color:#64748b;">Sprint 0 — interfaccia CRM RENTRI</span>
             </p>

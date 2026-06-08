@@ -5,13 +5,17 @@ namespace App\Models;
 use App\Domain\Registro\Exceptions\RegistroMovimentoLockedException;
 use App\Enums\RegistroMovimentoTipo;
 use App\Models\Concerns\HasDemoScope;
+use App\Traits\BelongsToSito;
+use Database\Factories\RegistroMovimentoFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class RegistroMovimento extends Model
 {
-    use HasDemoScope;
+    /** @use HasFactory<RegistroMovimentoFactory> */
+    use BelongsToSito, HasDemoScope, HasFactory;
 
     /**
      * Valori ammessi per source_type (morph verso origine movimento registro).

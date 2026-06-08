@@ -65,7 +65,7 @@
                 @endforeach
             </select>
             @error('prodottoSelezionato') <p class="seg-field-error">{{ $message }}</p> @enderror
-            <input type="file" wire:model="fotoBulk" accept="image/*" multiple class="op-bn-search" />
+            <input type="file" wire:model="fotoBulk" accept="image/*" capture="environment" multiple class="op-bn-search" />
             @error('fotoBulk') <p class="seg-field-error">{{ $message }}</p> @enderror
             @error('fotoBulk.*') <p class="seg-field-error">{{ $message }}</p> @enderror
             @if ($prodottoSelezionato && ! empty($fotoPerProdotto[$prodottoSelezionato] ?? []))

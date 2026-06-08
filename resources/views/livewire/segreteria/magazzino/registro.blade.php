@@ -8,7 +8,11 @@
         </div>
         <div class="seg-header-actions">
             <button type="button" class="seg-btn seg-btn-secondary seg-btn-sm seg-no-print" wire:click="exportCsv">
-                Export CSV
+                Esporta CSV
+            </button>
+            <button type="button" class="seg-btn seg-btn-secondary seg-btn-sm seg-no-print" wire:click="exportExcel" wire:loading.attr="disabled">
+                <span wire:loading.remove wire:target="exportExcel">Esporta Excel</span>
+                <span wire:loading wire:target="exportExcel">Esportazione…</span>
             </button>
             <button type="button" class="seg-btn seg-btn-secondary seg-btn-sm seg-no-print" onclick="window.print()">Stampa registro</button>
             <a href="{{ route('segreteria.magazzino') }}" class="seg-btn seg-btn-secondary" wire:navigate>← Magazzino</a>
@@ -79,13 +83,18 @@
                         <th>Tipo</th>
                         <th>Peso (kg)</th>
                         <th>Note</th>
+                        <th>Conformità</th>
                         <th>RENTRI</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach ($movimenti as $m)
                         <tr wire:key="reg-{{ $m->id }}">
-                            <td>{{ $m->data_movimento->format('d/m/Y H:i') }}</td>
+                            <td>
+                                <a href="{{ route('segreteria.registro.show', $m) }}" wire:navigate>
+                                    {{ $m->data_movimento->format('d/m/Y H:i') }}
+                                </a>
+                            </td>
                             <td class="seg-cell-strong">
                                 <a href="{{ route('segreteria.magazzino.show', $m->codice_cer_id) }}" wire:navigate>{{ $m->codiceCer?->codice }}</a>
                             </td>
@@ -94,6 +103,16 @@
                             </td>
                             <td>{{ number_format((float) $m->peso_kg, 2, ',', '.') }}</td>
                             <td>{{ Str::limit($m->note ?? '—', 60) }}</td>
+                            <td>
+                                @php
+                                    $conf = $conformita[$m->id] ?? ['ok' => true, 'errors' => []];
+                                @endphp
+                                @if ($conf['ok'])
+                                    <span title="Conforme RENTRI" aria-label="Conforme RENTRI">✅</span>
+                                @else
+                                    <span title="{{ implode(' · ', $conf['errors']) }}" aria-label="Errori conformità RENTRI">❌</span>
+                                @endif
+                            </td>
                             <td>
                                 @if ($m->isLocked())
                                     <x-badge-stato stato="warning" label="Bloccato" />

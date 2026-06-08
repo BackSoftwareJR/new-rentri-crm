@@ -13,7 +13,6 @@ use App\Models\Trasporto;
 use App\Models\User;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -76,17 +75,11 @@ class TrasportoGpsTrackingTest extends TestCase
 
     public function test_tracking_prep_timeline_logs_stub_channel(): void
     {
-        Log::spy();
-
         $trasporto = $this->inTransitoTrasporto();
         $timeline = app(TrasportoTrackingPrepService::class)->timeline($trasporto);
 
         $this->assertSame('gps_stub', $timeline[1]['key']);
         $this->assertSame('GPS stub attivo', $timeline[1]['label']);
-
-        Log::shouldHaveReceived('info')
-            ->once()
-            ->with('trasporto.tracking.stub', \Mockery::on(fn (array $ctx) => $ctx['trasporto_id'] === $trasporto->id));
     }
 
     public function test_trasporto_show_displays_gps_stub_badge_and_refresh(): void

@@ -2,11 +2,16 @@
 
 namespace App\Domain\Rentri;
 
+use App\Models\CodiceCer;
+use App\Models\MagazzinoCaricoManuale;
+use App\Models\RegistroMovimento;
 use App\Models\RentriSetting;
+use App\Models\Trasporto;
 use App\Services\Rentri\Contracts\RentriCertificateServiceInterface;
 use App\Services\Rentri\Dto\RentriRegistroTrasmissioneRequest;
 use App\Services\Rentri\Dto\TransmissionPayload;
 use App\Services\Rentri\Exceptions\RentriRegistroConformitaException;
+use Illuminate\Support\Carbon;
 
 class RentriRegistroConformitaValidator
 {
@@ -104,42 +109,185 @@ class RentriRegistroConformitaValidator
     }
 
     /**
+     * @return list<string>
+     */
+    public function movimentoErrors(RegistroMovimento $movimento): array
+    {
+        $movimento->loadMissing(['codiceCer', 'source']);
+
+        return $this->movimentoValidationErrors([
+            'id' => $movimento->id,
+            'tipo' => $movimento->tipo->value,
+            'codice_cer' => $movimento->codiceCer?->codice ?? '',
+            'codice_cer_id' => $movimento->codice_cer_id,
+            'peso_kg' => (float) $movimento->peso_kg,
+            'data' => $movimento->data_movimento?->toIso8601String() ?? '',
+            'source_type' => $movimento->source_type,
+            'source_id' => $movimento->source_id,
+        ], 'Movimento #'.$movimento->id);
+    }
+
+    public function isMovimentoConforme(RegistroMovimento $movimento): bool
+    {
+        return $this->movimentoErrors($movimento) === [];
+    }
+
+    /**
+     * @param  iterable<int, RegistroMovimento>  $movimenti
+     * @return array<int, array{ok: bool, errors: list<string>}>
+     */
+    public function batchMovimentoConformita(iterable $movimenti): array
+    {
+        $results = [];
+
+        foreach ($movimenti as $movimento) {
+            $errors = $this->movimentoErrors($movimento);
+            $results[$movimento->id] = [
+                'ok' => $errors === [],
+                'errors' => $errors,
+            ];
+        }
+
+        return $results;
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $movimenti
+     * @return array{count: int, by_id: array<int, list<string>>}
+     */
+    public function payloadMovimentoErrorSummary(array $movimenti): array
+    {
+        $byId = [];
+        $count = 0;
+
+        foreach ($movimenti as $index => $movimento) {
+            $label = 'Movimento #'.((int) ($movimento['id'] ?? ($index + 1)));
+            $errors = $this->movimentoValidationErrors($movimento, $label);
+
+            if ($errors !== []) {
+                $count++;
+                $byId[(int) ($movimento['id'] ?? ($index + 1))] = $errors;
+            }
+        }
+
+        return ['count' => $count, 'by_id' => $byId];
+    }
+
+    /**
      * @param  array<string, mixed>  $movimento
      * @return list<array{codice: string, label: string, ok: bool, message: string|null}>
      */
     private function movimentoItems(array $movimento, string $label): array
     {
-        $codiceCer = trim((string) ($movimento['codice_cer'] ?? ''));
-        $tipo = strtolower((string) ($movimento['tipo'] ?? ''));
-        $peso = (float) ($movimento['peso_kg'] ?? 0);
-        $data = trim((string) ($movimento['data'] ?? ''));
+        $errors = $this->movimentoValidationErrors($movimento, $label);
 
-        return [
-            $this->item(
-                'mov_codice_cer',
-                "{$label}: codice CER",
-                $codiceCer !== '',
-                'Codice CER obbligatorio per ogni movimento.',
+        if ($errors === []) {
+            return [
+                $this->item('mov_conformita', "{$label}: conformità RENTRI", true),
+            ];
+        }
+
+        return array_map(
+            fn (string $message, int $index) => $this->item(
+                'mov_error_'.$index,
+                "{$label}: conformità RENTRI",
+                false,
+                $message,
             ),
-            $this->item(
-                'mov_tipo',
-                "{$label}: tipo movimento",
-                in_array($tipo, ['carico', 'scarico'], true),
-                'Tipo movimento deve essere carico o scarico.',
-            ),
-            $this->item(
-                'mov_quantita',
-                "{$label}: quantità (kg)",
-                $peso > 0,
-                'La quantità in kg deve essere maggiore di zero.',
-            ),
-            $this->item(
-                'mov_data',
-                "{$label}: data movimento",
-                $data !== '',
-                'Data movimento obbligatoria.',
-            ),
-        ];
+            $errors,
+            array_keys($errors),
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $movimento
+     * @return list<string>
+     */
+    private function movimentoValidationErrors(array $movimento, string $label): array
+    {
+        $errors = [];
+
+        $codiceCer = trim((string) ($movimento['codice_cer'] ?? ''));
+        if ($codiceCer === '') {
+            $errors[] = "{$label}: codice CER obbligatorio.";
+        }
+
+        $tipo = strtolower((string) ($movimento['tipo'] ?? ''));
+        if (! in_array($tipo, ['carico', 'scarico'], true)) {
+            $errors[] = "{$label}: tipo movimento deve essere carico o scarico.";
+        }
+
+        $peso = (float) ($movimento['peso_kg'] ?? 0);
+        if ($peso <= 0) {
+            $errors[] = "{$label}: la quantità in kg deve essere maggiore di zero.";
+        }
+
+        $dataRaw = trim((string) ($movimento['data'] ?? ''));
+        if ($dataRaw === '') {
+            $errors[] = "{$label}: data movimento obbligatoria.";
+        } elseif (Carbon::parse($dataRaw)->isAfter(now())) {
+            $errors[] = "{$label}: la data movimento non può essere futura.";
+        }
+
+        $cerAttivo = $this->isCerAttivo($movimento);
+        if (! $cerAttivo) {
+            $errors[] = "{$label}: il codice CER non è attivo nel catalogo locale.";
+        }
+
+        if ($tipo === 'scarico' && ($movimento['source_type'] ?? null) !== MagazzinoCaricoManuale::class) {
+            if (! $this->hasLinkedFir($movimento)) {
+                $errors[] = "{$label}: lo scarico richiede un FIR collegato al trasporto.";
+            }
+        }
+
+        return $errors;
+    }
+
+    /**
+     * @param  array<string, mixed>  $movimento
+     */
+    private function isCerAttivo(array $movimento): bool
+    {
+        if (isset($movimento['codice_cer_id'])) {
+            $cer = CodiceCer::query()->find((int) $movimento['codice_cer_id']);
+
+            return $cer !== null && $cer->attivo;
+        }
+
+        $codice = trim((string) ($movimento['codice_cer'] ?? ''));
+        if ($codice === '') {
+            return false;
+        }
+
+        return CodiceCer::query()
+            ->where('codice', $codice)
+            ->where('attivo', true)
+            ->exists();
+    }
+
+    /**
+     * @param  array<string, mixed>  $movimento
+     */
+    private function hasLinkedFir(array $movimento): bool
+    {
+        if (($movimento['source_type'] ?? null) !== Trasporto::class) {
+            return false;
+        }
+
+        $trasportoId = (int) ($movimento['source_id'] ?? 0);
+        if ($trasportoId <= 0) {
+            return false;
+        }
+
+        $trasporto = Trasporto::query()
+            ->with(['fir', 'firCollegato'])
+            ->find($trasportoId);
+
+        if ($trasporto === null) {
+            return false;
+        }
+
+        return ($trasporto->firCollegato ?? $trasporto->fir) !== null;
     }
 
     /**
@@ -148,9 +296,9 @@ class RentriRegistroConformitaValidator
     private function item(string $codice, string $label, bool $ok, ?string $message = null): array
     {
         return [
-            'codice'  => $codice,
-            'label'   => $label,
-            'ok'      => $ok,
+            'codice' => $codice,
+            'label' => $label,
+            'ok' => $ok,
             'message' => $ok ? null : ($message ?? $label),
         ];
     }

@@ -7,23 +7,28 @@ use App\Enums\NotificationEvent;
 use App\Mail\EcommerceStripeReconciliationMail;
 use App\Models\EcommerceOrdine;
 use App\Models\StripeWebhookEvent;
-use Illuminate\Support\Facades\Log;
+use App\Support\Logging\StructuredLogService;
 
 class StripeReconciliationLogService
 {
+    public function __construct(private readonly StructuredLogService $logger) {}
+
     /**
      * @param  array<string, mixed>  $reconciliation
      */
     public function log(StripeWebhookEvent $record, ?EcommerceOrdine $ordine, array $reconciliation): void
     {
-        Log::channel('notifications')->info('stripe.reconciliation', [
-            'stripe_event_id' => $record->stripe_event_id,
-            'event_type'      => $record->event_type,
-            'ordine_id'       => $ordine?->id,
-            'session_id'      => $record->checkout_session_id,
-            'environment'     => $reconciliation['environment'] ?? null,
-            'amount_eur'      => $reconciliation['amount_eur'] ?? null,
-            'duplicate'       => false,
+        $this->logger->info('stripe', 'stripe.reconciliation', 'Riconciliazione Stripe webhook elaborata', [
+            'entity_type' => 'StripeWebhookEvent',
+            'entity_id'   => $record->stripe_event_id,
+            'extra'       => [
+                'event_type'  => $record->event_type,
+                'ordine_id'   => $ordine?->id,
+                'session_id'  => $record->checkout_session_id,
+                'environment' => $reconciliation['environment'] ?? null,
+                'amount_eur'  => $reconciliation['amount_eur'] ?? null,
+                'duplicate'   => false,
+            ],
         ]);
 
         if ($ordine !== null) {
@@ -40,10 +45,12 @@ class StripeReconciliationLogService
 
     public function logDuplicate(string $stripeEventId, string $eventType): void
     {
-        Log::channel('notifications')->info('stripe.reconciliation', [
-            'stripe_event_id' => $stripeEventId,
-            'event_type'      => $eventType,
-            'duplicate'       => true,
+        $this->logger->info('stripe', 'stripe.reconciliation.duplicate', 'Evento Stripe duplicato ignorato', [
+            'entity_id' => $stripeEventId,
+            'extra'     => [
+                'event_type' => $eventType,
+                'duplicate'  => true,
+            ],
         ]);
     }
 }

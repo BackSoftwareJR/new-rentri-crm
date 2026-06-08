@@ -19,6 +19,7 @@ class AnagraficaService
     {
         $query = Anagrafica::query()
             ->with('authorizations')
+            ->withCount('authorizations')
             ->orderByDesc('created_at');
 
         if (! empty($filters['tipo']) && in_array($filters['tipo'], Anagrafica::TIPI, true)) {

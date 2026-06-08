@@ -15,21 +15,22 @@
     </nav>
 
     <div class="seg-topbar-search seg-global-search" id="seg-global-search-root">
-        <div class="seg-global-search-field">
+        <button
+            type="button"
+            class="seg-global-search-trigger"
+            aria-label="Apri ricerca globale"
+            aria-describedby="seg-global-search-hint"
+            title="Cerca (⌘K / Ctrl+K)"
+            x-on:click="$dispatch('open-global-search')"
+        >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-            <input
-                type="search"
-                id="seg-global-search-input"
-                autocomplete="off"
-                placeholder="Cerca: VFU, CER, anagrafiche, pagine…"
-                aria-label="Ricerca globale"
-                aria-describedby="seg-global-search-hint"
-                title="Ricerca globale — funzione in arrivo"
-                disabled
-            />
-        </div>
-        <p id="seg-global-search-hint" class="seg-sr-only">Ricerca globale non ancora disponibile.</p>
+            <span class="seg-global-search-trigger-label">Cerca…</span>
+            <kbd class="seg-global-search-kbd" aria-hidden="true">⌘K</kbd>
+        </button>
+        <p id="seg-global-search-hint" class="seg-sr-only">Ricerca globale su VFU, anagrafiche, fatture, trasporti e FIR. Scorciatoia da tastiera: Cmd+K o Ctrl+K.</p>
     </div>
+
+    <livewire:global-search />
 
     <div class="seg-topbar-actions">
         <button
@@ -83,10 +84,9 @@
             </button>
         </div>
 
-        <button type="button" class="seg-icon-btn" aria-label="Notifiche" title="Notifiche">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
-            <span class="seg-noti-dot" hidden></span>
-        </button>
+        <livewire:sito-switcher />
+
+        <livewire:notification-bell />
 
         <button type="button" class="seg-user-btn" aria-label="Utente">
             <span class="seg-user-avatar">
@@ -96,3 +96,12 @@
         </button>
     </div>
 </header>
+
+<script>
+    document.addEventListener('keydown', (event) => {
+        if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+            event.preventDefault();
+            window.dispatchEvent(new CustomEvent('open-global-search'));
+        }
+    });
+</script>

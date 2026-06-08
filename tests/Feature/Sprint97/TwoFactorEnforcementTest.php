@@ -79,6 +79,21 @@ class TwoFactorEnforcementTest extends TestCase
             ->assertSee('2FA obbligatoria in arrivo', false);
     }
 
+    public function test_grace_period_expired_blocks_access(): void
+    {
+        Config::set('two-factor.enforce_admin_segreteria', true);
+        Config::set('two-factor.enforce_grace_until', now()->subDay()->toIso8601String());
+
+        $user = User::where('email', 'segreteria@example.com')->firstOrFail();
+        $this->assertFalse($user->hasTwoFactorEnabled());
+        $this->assertTrue(app(TwoFactorEnforcementService::class)->isBlocked($user));
+
+        $this->actingAs($user)
+            ->get(route('segreteria.dashboard'))
+            ->assertRedirect(route('segreteria.impostazioni.sicurezza'))
+            ->assertSessionHas('warning');
+    }
+
     public function test_operatore_excluded_from_enforcement(): void
     {
         Config::set('two-factor.enforce_admin_segreteria', true);

@@ -125,7 +125,7 @@ class RentriWizardFirMudTest extends TestCase
         Livewire::actingAs($user)
             ->test(MudShow::class, ['dichiarazione' => $mud])
             ->call('exportPdf')
-            ->assertFileDownloaded('mud-'.$anno.'-stub.pdf');
+            ->assertFileDownloaded('mud-'.$anno.'.pdf');
     }
 
     public function test_activity_log_has_query_indexes(): void

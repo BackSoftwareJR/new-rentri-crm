@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\HasDemoScope;
 use App\Support\Demo\DemoContext;
+use App\Support\Sito\SitoContext;
 use Illuminate\Database\Eloquent\Model;
 
 class RentriSetting extends Model
@@ -13,6 +14,7 @@ class RentriSetting extends Model
     protected $table = 'rentri_settings';
 
     protected $fillable = [
+        'sito_id',
         'ambiente',
         'cf',
         'cf_operatore',
@@ -50,11 +52,17 @@ class RentriSetting extends Model
         ];
     }
 
-    /** Ritorna la configurazione singleton per la modalità corrente (demo o produzione). */
+    public function sito(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Sito::class);
+    }
+
+    /** Ritorna la configurazione per sito attivo e modalità corrente (demo o produzione). */
     public static function instance(): self
     {
         $isDemo = DemoContext::isActive();
-        $key = $isDemo ? 'demo' : 'prod';
+        $sitoId = SitoContext::activeSitoId();
+        $key = ($isDemo ? 'demo' : 'prod').':'.($sitoId ?? 'global');
 
         if (isset(static::$instanceCache[$key])) {
             $found = static::query()->find(static::$instanceCache[$key]);
@@ -66,13 +74,27 @@ class RentriSetting extends Model
             unset(static::$instanceCache[$key]);
         }
 
-        $setting = static::query()->firstOrCreate(
-            ['is_demo' => $isDemo],
-            [
-                'ambiente' => 'sandbox',
+        $baseQuery = static::query()->where('is_demo', $isDemo);
+
+        if ($sitoId !== null) {
+            $setting = (clone $baseQuery)->where('sito_id', $sitoId)->first();
+
+            if ($setting !== null) {
+                static::$instanceCache[$key] = $setting->getKey();
+
+                return $setting;
+            }
+        }
+
+        $setting = (clone $baseQuery)->whereNull('sito_id')->first();
+
+        if ($setting === null) {
+            $setting = static::query()->create([
                 'is_demo'  => $isDemo,
-            ],
-        );
+                'sito_id'  => $sitoId,
+                'ambiente' => 'sandbox',
+            ]);
+        }
 
         static::$instanceCache[$key] = $setting->getKey();
 

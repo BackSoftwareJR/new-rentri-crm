@@ -1,3 +1,37 @@
+@push('head-extras')
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+@endpush
+
+@push('foot-scripts')
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV/XN/WPcM=" crossorigin=""></script>
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('gpsLeafletMap', (initialLat, initialLng, trasportoId) => ({
+        map: null,
+        marker: null,
+        init() {
+            this.$nextTick(() => {
+                if (!window.L || !this.$refs.mapEl) return;
+                this.map = L.map(this.$refs.mapEl).setView([initialLat, initialLng], 14);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>',
+                    maxZoom: 19,
+                }).addTo(this.map);
+                this.marker = L.marker([initialLat, initialLng]).addTo(this.map);
+                this.marker.bindPopup('<strong>Trasporto #' + trasportoId + '</strong>').openPopup();
+            });
+        },
+        updatePosition(lat, lng) {
+            if (!this.map || !this.marker) return;
+            const latlng = [lat, lng];
+            this.marker.setLatLng(latlng);
+            this.map.panTo(latlng, { animate: true });
+        },
+    }));
+});
+</script>
+@endpush
+
 <div>
     @include('livewire.partials.flash-messages')
 
@@ -27,7 +61,7 @@
 
     <div class="mag-detail-grid">
         @if ($trackingAvailable)
-            <section class="seg-card seg-card-padding seg-tracking-stub" id="seg-tracking-map">
+            <section class="seg-card seg-card-padding seg-tracking-stub" id="seg-tracking-map" wire:poll.30000ms="refreshGpsPosition">
                 <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 0.35rem;">
                     <h2 class="mag-section-title" style="margin: 0;">Tracking GPS</h2>
                     <x-trasporto-gps-mode-badge />
@@ -50,9 +84,6 @@
                         @endforeach
                     </ul>
                 @endif
-                @if ($trackingEtaStub)
-                    <p class="mag-section-lead">ETA stimata: <strong>{{ $trackingEtaStub }}</strong></p>
-                @endif
 
                 @if ($lastGpsPosition)
                     <dl class="seg-dl" style="margin: 0.75rem 0;">
@@ -65,7 +96,7 @@
                             @endif
                         </dd>
                         @if ($trasporto->gps_tracked_at)
-                            <dt>Rilevata il</dt>
+                            <dt>Aggiornata il</dt>
                             <dd>{{ $trasporto->gps_tracked_at->format('d/m/Y H:i') }}</dd>
                         @endif
                     </dl>
@@ -73,17 +104,30 @@
                     <p class="seg-text-muted">Nessuna posizione registrata. Usa «Aggiorna posizione» per il primo poll GPS.</p>
                 @endif
 
-                @if ($gpsMapEmbedUrl)
-                    <iframe
-                        title="Mappa posizione GPS trasporto #{{ $trasporto->id }}"
-                        src="{{ $gpsMapEmbedUrl }}"
-                        class="seg-tracking-map-embed"
-                        loading="lazy"
-                        referrerpolicy="no-referrer-when-downgrade"
-                    ></iframe>
+                @if ($trackingEtaStub)
+                    <p class="mag-section-lead" style="margin-top: 0.25rem;">ETA stimata: <strong>{{ $trackingEtaStub }}</strong></p>
+                @endif
+
+                @if (! $gpsRuntime->isStub() && $lastGpsPosition)
+                    {{-- Interactive Leaflet map for live GPS — wire:ignore prevents Livewire from destroying the map DOM on re-render --}}
+                    <div wire:ignore>
+                        <div
+                            x-data="gpsLeafletMap({{ $lastGpsPosition['latitude'] }}, {{ $lastGpsPosition['longitude'] }}, {{ $trasporto->id }})"
+                            x-init="init()"
+                            @gps-position-updated.window="updatePosition($event.detail.lat, $event.detail.lng)"
+                        >
+                            <div x-ref="mapEl" class="seg-tracking-map-leaflet" style="height: 320px; width: 100%; border-radius: 6px; margin: 0.75rem 0;" aria-label="Mappa posizione GPS trasporto #{{ $trasporto->id }}"></div>
+                        </div>
+                    </div>
                 @else
-                    <div class="seg-tracking-map-placeholder" aria-hidden="true">
-                        <span>Mappa tracking</span>
+                    <div class="seg-tracking-map-placeholder" style="margin: 0.75rem 0;" aria-label="Tracciamento GPS non disponibile">
+                        @if ($gpsRuntime->isStub())
+                            <span>Tracciamento GPS non disponibile</span>
+                            <small style="display: block; margin-top: 0.25rem; font-size: 0.8em; opacity: 0.7;">Modalità stub — mappa interattiva disponibile in modalità live</small>
+                        @else
+                            <span>Mappa tracking</span>
+                            <small style="display: block; margin-top: 0.25rem; font-size: 0.8em; opacity: 0.7;">Usa «Aggiorna posizione» per ottenere la prima rilevazione GPS</small>
+                        @endif
                     </div>
                 @endif
 
@@ -100,7 +144,8 @@
                 <div class="seg-header-actions" style="margin-top: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
                     <button type="button" class="seg-btn seg-btn-primary seg-btn-sm" wire:click="refreshGpsPosition" wire:loading.attr="disabled"
                         @if (! $gpsRuntime->isStub() && ! $gpsPreflightReady) disabled @endif>
-                        Aggiorna posizione
+                        <span wire:loading.remove wire:target="refreshGpsPosition">Aggiorna posizione</span>
+                        <span wire:loading wire:target="refreshGpsPosition">Aggiornamento…</span>
                     </button>
                     <a href="{{ $gpsMapLink ?? $trackingMapUrl }}" class="seg-btn seg-btn-secondary seg-btn-sm" target="_blank" rel="noopener noreferrer">
                         Apri mappa {{ $lastGpsPosition ? 'GPS' : 'destinazione' }}
@@ -224,6 +269,11 @@
                     </dd>
                 </dl>
                 <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem;">
+                    @if ($trasporto->firCollegato->vidimato_at)
+                        <button type="button" class="seg-btn seg-btn-secondary seg-btn-sm" wire:click="downloadFirPdf">
+                            Scarica FIR PDF
+                        </button>
+                    @endif
                     @if ($canSignXfir)
                         <button type="button" class="seg-btn seg-btn-primary seg-btn-sm" wire:click="firmaXfir" wire:confirm="Confermi la firma COSE xFIR del formulario?" wire:loading.attr="disabled">
                             <span wire:loading.remove wire:target="firmaXfir">Firma xFIR</span>
@@ -287,4 +337,6 @@
             @endif
         </section>
     </div>
+
+    <livewire:timeline-widget :subject="$trasporto" title="Storico trasporto" wire:key="timeline-trasporto-{{ $trasporto->id }}" />
 </div>

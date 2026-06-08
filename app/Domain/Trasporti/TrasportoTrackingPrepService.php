@@ -4,7 +4,7 @@ namespace App\Domain\Trasporti;
 
 use App\Enums\TrasportoStato;
 use App\Models\Trasporto;
-use Illuminate\Support\Facades\Log;
+use App\Support\Logging\StructuredLogService;
 
 class TrasportoTrackingPrepService
 {
@@ -12,6 +12,7 @@ class TrasportoTrackingPrepService
         private TrasportoTrackingService $tracking,
         private TrasportoGpsRuntimeModeService $gpsRuntime,
         private TrasportoGpsTrackingService $gpsTracking,
+        private StructuredLogService $logger,
     ) {}
 
     public function prepLabel(): string
@@ -39,11 +40,15 @@ class TrasportoTrackingPrepService
     public function timeline(Trasporto $trasporto): array
     {
         if ($this->isPrepActive($trasporto)) {
-            Log::info($this->gpsRuntime->isStub() ? 'trasporto.tracking.stub' : 'trasporto.tracking.live', [
-                'trasporto_id' => $trasporto->id,
-                'stato'        => $trasporto->stato->value,
-                'eta_stub'     => $this->etaStub($trasporto),
-                'gps_mode'     => $this->gpsRuntime->modeLabel(),
+            $action = $this->gpsRuntime->isStub() ? 'trasporto.tracking.stub' : 'trasporto.tracking.live';
+            $this->logger->info('gps', $action, 'Timeline tracking trasporto consultata', [
+                'entity_type' => 'Trasporto',
+                'entity_id'   => $trasporto->id,
+                'extra'       => [
+                    'stato'    => $trasporto->stato->value,
+                    'eta_stub' => $this->etaStub($trasporto),
+                    'gps_mode' => $this->gpsRuntime->modeLabel(),
+                ],
             ]);
         }
 

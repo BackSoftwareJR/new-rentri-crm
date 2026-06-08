@@ -50,7 +50,7 @@ class Cycle5ClosureGoLiveTest extends TestCase
         $this->assertNotEmpty($budget[0]['timings'] ?? null);
     }
 
-    public function test_topbar_search_exposes_sr_hint_for_disabled_state(): void
+    public function test_topbar_search_exposes_global_search_trigger(): void
     {
         $user = User::where('email', 'segreteria@example.com')->firstOrFail();
 
@@ -59,7 +59,8 @@ class Cycle5ClosureGoLiveTest extends TestCase
             ->assertOk()
             ->assertSee('id="seg-global-search-hint"', false)
             ->assertSee('aria-describedby="seg-global-search-hint"', false)
-            ->assertSee('non ancora disponibile', false);
+            ->assertSee('seg-global-search-trigger', false)
+            ->assertSee('Apri ricerca globale', false);
     }
 
     public function test_demo_banner_has_aria_live_polite(): void

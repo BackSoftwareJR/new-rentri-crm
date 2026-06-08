@@ -5,8 +5,11 @@ namespace App\Http\Livewire\Segreteria\CodiciCer;
 use App\Domain\Magazzino\CodiceCerService;
 use App\Http\Livewire\Segreteria\SegreteriaPage;
 use App\Models\CodiceCer;
+use App\Services\Rentri\Contracts\RentriCodificheSyncInterface;
 use Illuminate\Contracts\View\View;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Title;
 
 #[Title('Codici CER')]
@@ -79,6 +82,34 @@ class CodiciCerIndex extends SegreteriaPage
         }
 
         $this->closeModal();
+    }
+
+    public function syncDaRentri(RentriCodificheSyncInterface $sync): void
+    {
+        Gate::authorize('codice-cer.sync-rentri');
+
+        try {
+            $result = $sync->sync();
+        } catch (\RuntimeException $e) {
+            Log::channel('rentri')->error('CodiciCer sync failed', ['error' => $e->getMessage()]);
+            session()->flash('error', 'Errore durante la sincronizzazione RENTRI: '.$e->getMessage());
+
+            return;
+        }
+
+        Log::channel('rentri')->info('CodiciCer sync completata', [
+            'created'     => $result['created'],
+            'updated'     => $result['updated'],
+            'deactivated' => $result['deactivated'],
+            'skipped'     => $result['skipped'],
+        ]);
+
+        session()->flash('success', sprintf(
+            'Sincronizzati: %d creati, %d aggiornati, %d disattivati.',
+            $result['created'],
+            $result['updated'],
+            $result['deactivated'],
+        ));
     }
 
     public function delete(int $id, CodiceCerService $service): void

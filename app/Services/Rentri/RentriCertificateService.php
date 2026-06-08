@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
+use OpenSSLAsymmetricKey;
 use RuntimeException;
 
 class RentriCertificateService implements RentriCertificateServiceInterface
@@ -70,14 +71,20 @@ class RentriCertificateService implements RentriCertificateServiceInterface
             throw new RuntimeException('Certificato RENTRI non valido o non configurato.');
         }
 
+        $agidJwt = $this->buildAgidJwtSignature($settings);
+
         if ($this->usesMtls()) {
             return [
-                'Accept'       => 'application/json',
-                'Content-Type' => 'application/json',
+                'Accept'              => 'application/json',
+                'Content-Type'        => 'application/json',
+                'Agid-JWT-Signature'  => 'Bearer '.$agidJwt,
             ];
         }
 
-        return $this->stubSignatureHeaders($settings, $method, $endpoint, $payload);
+        return array_merge(
+            $this->stubSignatureHeaders($settings, $method, $endpoint, $payload),
+            ['Agid-JWT-Signature' => 'Bearer '.$agidJwt],
+        );
     }
 
     /**
@@ -116,6 +123,7 @@ class RentriCertificateService implements RentriCertificateServiceInterface
             'X-RENTRI-Signature-Alg'  => 'STUB-OFFLINE',
             'X-RENTRI-Logical-Method' => strtoupper($method),
             'X-RENTRI-Logical-Path'   => $endpoint,
+            'Agid-JWT-Signature'      => 'Bearer stub.offline.agid-jwt',
         ];
     }
 
@@ -125,13 +133,22 @@ class RentriCertificateService implements RentriCertificateServiceInterface
             return [];
         }
 
-        $path = $this->absolutePath($settings);
+        $path     = $this->absolutePath($settings);
         $password = Crypt::decryptString($settings->cert_password_encrypted);
 
-        return [
-            'cert'   => [$path, $password],
-            'verify' => (bool) config('services.rentri.verify_ssl', true),
-        ];
+        [$pemCertPath, $pemKeyPath] = $this->ensurePemFiles((string) $path, $password);
+
+        $options = ['verify' => (bool) config('services.rentri.verify_ssl', true)];
+
+        if ($pemCertPath !== null && $pemKeyPath !== null) {
+            $options['cert']    = $pemCertPath;
+            $options['ssl_key'] = $pemKeyPath;
+        } else {
+            // Fallback: pass .p12 directly (curl may support it on some builds)
+            $options['cert'] = [$path, $password];
+        }
+
+        return $options;
     }
 
     public function absolutePath(RentriSetting $settings): ?string
@@ -147,6 +164,101 @@ class RentriCertificateService implements RentriCertificateServiceInterface
         }
 
         return Storage::disk('local')->path($relative);
+    }
+
+    /**
+     * Builds a self-signed RS256 JWT per AgID ID_AUTH_REST_02 (Agid-JWT-Signature).
+     * Claims: iss/sub = CF operatore, aud = RENTRI API base URL, iat/exp/jti standard.
+     * Returns a stub token when running in test environment or when the .p12 is a fake.
+     */
+    private function buildAgidJwtSignature(RentriSetting $settings): string
+    {
+        if (app()->environment('testing')) {
+            return 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.stub.agid_jwt_stub';
+        }
+
+        $path     = $this->absolutePath($settings);
+        $password = Crypt::decryptString($settings->cert_password_encrypted);
+        $content  = $path !== null ? @file_get_contents($path) : false;
+
+        if ($content === false || ! @openssl_pkcs12_read($content, $certs, $password)) {
+            throw new RuntimeException('Impossibile leggere il certificato PKCS#12 per la firma AgID JWT.');
+        }
+
+        /** @var OpenSSLAsymmetricKey|false $privateKey */
+        $privateKey = openssl_pkey_get_private($certs['pkey']);
+
+        if ($privateKey === false) {
+            throw new RuntimeException('Chiave privata PKCS#12 non leggibile per la firma AgID JWT.');
+        }
+
+        $baseUrl = $settings->ambiente === 'produzione'
+            ? rtrim((string) config('services.rentri.base_url_production', 'https://api.rentri.gov.it'), '/')
+            : rtrim((string) config('services.rentri.base_url_sandbox', 'https://demoapi.rentri.gov.it'), '/');
+
+        $cf  = (string) ($settings->cf_operatore ?? '');
+        $iat = time();
+        $exp = $iat + 300;
+        $jti = (string) Str::uuid();
+
+        $header  = $this->jwtBase64EncodeJson(['alg' => 'RS256', 'typ' => 'JWT']);
+        $payload = $this->jwtBase64EncodeJson([
+            'iss' => $cf,
+            'sub' => $cf,
+            'aud' => $baseUrl,
+            'iat' => $iat,
+            'exp' => $exp,
+            'jti' => $jti,
+        ]);
+
+        $signingInput = $header.'.'.$payload;
+
+        openssl_sign($signingInput, $signature, $privateKey, OPENSSL_ALGO_SHA256);
+
+        return $signingInput.'.'.$this->jwtBase64EncodeBinary($signature);
+    }
+
+    private function jwtBase64EncodeJson(array $data): string
+    {
+        return rtrim(strtr(base64_encode((string) json_encode($data, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES)), '+/', '-_'), '=');
+    }
+
+    private function jwtBase64EncodeBinary(string $data): string
+    {
+        return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
+    }
+
+    /**
+     * Extracts PEM cert and key from a PKCS#12 file and writes them alongside the .p12.
+     * Returns [certPemPath, keyPemPath] or [null, null] on failure.
+     *
+     * @return array{0: string|null, 1: string|null}
+     */
+    private function ensurePemFiles(string $p12AbsolutePath, string $password): array
+    {
+        if (app()->environment('testing')) {
+            return [null, null];
+        }
+
+        $dir     = dirname($p12AbsolutePath);
+        $base    = pathinfo($p12AbsolutePath, PATHINFO_FILENAME);
+        $certPem = $dir.'/'.$base.'-cert.pem';
+        $keyPem  = $dir.'/'.$base.'-key.pem';
+
+        if (! is_readable($certPem) || ! is_readable($keyPem)) {
+            $content = @file_get_contents($p12AbsolutePath);
+
+            if ($content === false || ! @openssl_pkcs12_read($content, $certs, $password)) {
+                return [null, null];
+            }
+
+            file_put_contents($certPem, $certs['cert']);
+            file_put_contents($keyPem, $certs['pkey']);
+            chmod($certPem, 0600);
+            chmod($keyPem, 0600);
+        }
+
+        return [$certPem, $keyPem];
     }
 
     private function usesMtls(?RentriSetting $settings = null): bool
@@ -206,6 +318,18 @@ class RentriCertificateService implements RentriCertificateServiceInterface
         try {
             $relative = Crypt::decryptString($settings->cert_path_encrypted);
             Storage::disk('local')->delete($relative);
+
+            // Also remove derived PEM files (from ensurePemFiles)
+            $abs  = Storage::disk('local')->path($relative);
+            $base = pathinfo($abs, PATHINFO_FILENAME);
+            $dir  = dirname($abs);
+
+            foreach (['-cert.pem', '-key.pem'] as $suffix) {
+                $pem = $dir.'/'.$base.$suffix;
+                if (is_file($pem)) {
+                    @unlink($pem);
+                }
+            }
         } catch (\Throwable) {
             // Ignora path legacy non decifrabile o già rimosso.
         }

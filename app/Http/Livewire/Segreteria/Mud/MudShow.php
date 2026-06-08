@@ -8,6 +8,7 @@ use App\Domain\Mud\MudService;
 use App\Domain\Mud\MudXmlValidationService;
 use App\Http\Livewire\Segreteria\SegreteriaPage;
 use App\Models\MudDichiarazione;
+use App\Support\Logging\StructuredLogService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Validation\ValidationException;
@@ -39,7 +40,7 @@ class MudShow extends SegreteriaPage
             return;
         }
 
-        session()->flash('success', 'Dichiarazione MUD completata. Export JSON stub disponibile.');
+        session()->flash('success', 'Dichiarazione MUD completata. Export JSON, XML e PDF disponibili.');
     }
 
     public function inviaStub(MudInvioTelematicoService $invio): void
@@ -73,7 +74,7 @@ class MudShow extends SegreteriaPage
         ));
     }
 
-    public function exportJson(MudService $mud): StreamedResponse
+    public function exportJson(MudService $mud, StructuredLogService $logger): StreamedResponse
     {
         $this->authorize('export', $this->dichiarazione);
 
@@ -82,29 +83,64 @@ class MudShow extends SegreteriaPage
 
         $json = json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
 
+        $filename = $mud->exportFilename($this->dichiarazione);
+
+        $logger->info('operatore', 'mud.export.json', 'Export JSON MUD generato', [
+            'entity_type' => 'MudDichiarazione',
+            'entity_id'   => $this->dichiarazione->id,
+            'user_id'     => auth()->id(),
+            'extra'       => [
+                'anno_riferimento' => $this->dichiarazione->anno_riferimento,
+                'filename'         => $filename,
+                'simulazione'      => (bool) ($payload['simulazione'] ?? false),
+            ],
+        ]);
+
         return response()->streamDownload(
             fn () => print($json),
-            $mud->exportFilename($this->dichiarazione),
+            $filename,
             ['Content-Type' => 'application/json'],
         );
     }
 
-    public function exportXml(MudService $mud, MudXmlValidationService $xml): StreamedResponse
+    public function exportXml(MudService $mud, MudXmlValidationService $xml, StructuredLogService $logger): StreamedResponse
     {
         $this->authorize('export', $this->dichiarazione);
 
         $content = $xml->buildXml($this->dichiarazione, $mud);
+        $filename = sprintf('mud-%d.xml', $this->dichiarazione->anno_riferimento);
+
+        $logger->info('operatore', 'mud.export.xml', 'Export XML MUD generato', [
+            'entity_type' => 'MudDichiarazione',
+            'entity_id'   => $this->dichiarazione->id,
+            'user_id'     => auth()->id(),
+            'extra'       => [
+                'anno_riferimento' => $this->dichiarazione->anno_riferimento,
+                'filename'         => $filename,
+                'simulazione'      => (bool) config('services.mud_telematico.stub', true),
+            ],
+        ]);
 
         return response()->streamDownload(
             fn () => print($content),
-            sprintf('mud-%d-stub.xml', $this->dichiarazione->anno_riferimento),
+            $filename,
             ['Content-Type' => 'application/xml; charset=UTF-8'],
         );
     }
 
-    public function exportPdf(MudService $mud, MudPdfExportService $pdf): StreamedResponse
+    public function exportPdf(MudService $mud, MudPdfExportService $pdf, StructuredLogService $logger): StreamedResponse
     {
         $this->authorize('export', $this->dichiarazione);
+
+        $logger->info('operatore', 'mud.export.pdf', 'Export PDF MUD generato', [
+            'entity_type' => 'MudDichiarazione',
+            'entity_id'   => $this->dichiarazione->id,
+            'user_id'     => auth()->id(),
+            'extra'       => [
+                'anno_riferimento' => $this->dichiarazione->anno_riferimento,
+                'filename'         => $pdf->filename($this->dichiarazione),
+            ],
+        ]);
 
         return $pdf->downloadResponse($this->dichiarazione, $mud);
     }

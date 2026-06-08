@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Domain\Azienda\AziendaSettingService;
 use App\Services\Rentri\Contracts\RentriApiClientInterface;
 use App\Services\Rentri\Contracts\RentriCertificateServiceInterface;
 use App\Services\Rentri\Contracts\RentriCodificheSyncInterface;
@@ -20,6 +21,7 @@ use App\Services\Rentri\RentriFirService;
 use App\Services\Rentri\RentriRegistryService;
 use App\Services\Rentri\Contracts\RentriXfirTransmissionServiceInterface;
 use App\Services\Rentri\RentriXfirTransmissionService;
+use App\Services\Pec\PecMailService;
 use App\Support\Horizon\HorizonMonitorService;
 use App\Support\DashboardReport;
 use App\Support\NotificationSettings;
@@ -27,6 +29,8 @@ use App\Support\TwoFactorSettings;
 use App\Support\Operatore\OperatoreNavBadgeService;
 use Illuminate\Support\Facades\View;
 use App\Support\Logging\RequestContext;
+use App\Domain\Infrastructure\ApplicationHealthService;
+use Illuminate\Foundation\Events\DiagnosingHealth;
 use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
@@ -50,8 +54,11 @@ use App\Models\EcommerceOrdine;
 use App\Models\EcommerceProdotto;
 use App\Models\MudDichiarazione;
 use App\Models\RentriSetting;
+use App\Models\Sito;
 use App\Models\RentriTransmissione;
 use App\Models\RentriTransazione;
+use App\Models\Fattura;
+use App\Policies\FatturaPolicy;
 use App\Policies\EcommerceOrdinePolicy;
 use App\Policies\EcommerceProdottoPolicy;
 use App\Policies\MudDichiarazionePolicy;
@@ -61,6 +68,7 @@ use App\Policies\DashboardReportPolicy;
 use App\Policies\NotificationSettingsPolicy;
 use App\Policies\TwoFactorSettingsPolicy;
 use App\Policies\RentriSettingPolicy;
+use App\Policies\SitoPolicy;
 use App\Policies\RentriTransazionePolicy;
 use App\Policies\RentriTransmissionePolicy;
 use App\Policies\UserPolicy;
@@ -68,14 +76,19 @@ use App\Policies\VfuRegistrationPolicy;
 use App\Policies\VfuDocumentoPolicy;
 use App\Models\Fir;
 use App\Models\FirBlocco;
+use App\Models\SmontaggioSession;
 use App\Models\Trasporto;
 use App\Policies\BonificaPolicy;
 use App\Policies\FirBloccoPolicy;
 use App\Policies\FirPolicy;
+use App\Policies\SmontaggioPolicy;
 use App\Policies\TrasportoPolicy;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use App\Http\Livewire\GlobalSearch;
+use App\Http\Livewire\NotificationBell;
+use App\Http\Livewire\TimelineWidget;
 use Livewire\Livewire;
 use Livewire\Mechanisms\HandleRequests\EndpointResolver;
 use Spatie\Activitylog\Models\Activity;
@@ -97,6 +110,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(RentriFirSigningServiceInterface::class, RentriFirSigningService::class);
         $this->app->singleton(RentriXfirTransmissionServiceInterface::class, RentriXfirTransmissionService::class);
         $this->app->singleton(\App\Domain\Ecommerce\Contracts\StripeCheckoutClientInterface::class, \App\Domain\Ecommerce\StripeCheckoutClient::class);
+        $this->app->singleton(AziendaSettingService::class);
+        $this->app->singleton(PecMailService::class);
     }
 
     /**
@@ -115,12 +130,14 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(RentriTransmissione::class, RentriTransmissionePolicy::class);
         Gate::policy(RentriTransazione::class, RentriTransazionePolicy::class);
         Gate::policy(RentriSetting::class, RentriSettingPolicy::class);
+        Gate::policy(Sito::class, SitoPolicy::class);
         Gate::policy(DashboardReport::class, DashboardReportPolicy::class);
         Gate::policy(NotificationSettings::class, NotificationSettingsPolicy::class);
         Gate::policy(TwoFactorSettings::class, TwoFactorSettingsPolicy::class);
         Gate::policy(MagazzinoSvuotamento::class, MagazzinoSvuotamentoPolicy::class);
         Gate::policy(MudDichiarazione::class, MudDichiarazionePolicy::class);
         Gate::policy(EcommerceProdotto::class, EcommerceProdottoPolicy::class);
+        Gate::policy(Fattura::class, FatturaPolicy::class);
         Gate::policy(EcommerceOrdine::class, EcommerceOrdinePolicy::class);
         Gate::policy(Trasporto::class, TrasportoPolicy::class);
         Gate::policy(Fir::class, FirPolicy::class);
@@ -150,9 +167,22 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('bonifica.saveChecklist', fn (User $user, VfuRegistration $vfu) => $bonificaPolicy->saveChecklist($user, $vfu));
         Gate::define('bonifica.advancePericolosi', fn (User $user, VfuRegistration $vfu) => $bonificaPolicy->advancePericolosi($user, $vfu));
 
+        $smontaggioPolicy = app(SmontaggioPolicy::class);
+        Gate::define('smontaggio.viewAny', fn (User $user) => $smontaggioPolicy->viewAny($user));
+        Gate::define('smontaggio.avvia', fn (User $user, VfuRegistration $vfu) => $smontaggioPolicy->avvia($user, $vfu));
+        Gate::define('smontaggio.gestisci', fn (User $user, SmontaggioSession $session) => $smontaggioPolicy->gestisci($user, $session));
+        Gate::define('smontaggio.completa', fn (User $user, SmontaggioSession $session) => $smontaggioPolicy->completa($user, $session));
+
         $legacySyncPolicy = app(\App\Policies\LegacyImportSyncPolicy::class);
         Gate::define('legacy.sync', fn (User $user) => $legacySyncPolicy->sync($user));
         Gate::define('legacy.viewRuns', fn (User $user) => $legacySyncPolicy->viewRuns($user));
+
+        Livewire::component('notification-bell', NotificationBell::class);
+        Livewire::component('global-search', GlobalSearch::class);
+        Livewire::component('timeline-widget', TimelineWidget::class);
+        Livewire::component('sito-switcher', \App\Http\Livewire\SitoSwitcher::class);
+        Livewire::component('shop-cart', \App\Http\Livewire\Shop\ShopCart::class);
+        Livewire::component('segreteria.vfu.vfu-import-csv', \App\Http\Livewire\Segreteria\Vfu\VfuImportCsv::class);
 
         Livewire::setUpdateRoute(function ($handle, $path) {
             return Route::post($path, $handle)
@@ -165,7 +195,11 @@ class AppServiceProvider extends ServiceProvider
         ]);
 
         View::composer('layouts.operatore', function ($view) {
-            $view->with('bonificaNavBadge', app(OperatoreNavBadgeService::class)->bonificaPendingCount());
+            $badges = app(OperatoreNavBadgeService::class);
+            $view->with([
+                'bonificaNavBadge'    => $badges->bonificaPendingCount(),
+                'smontaggioNavBadge'  => $badges->smontaggioPendingCount(),
+            ]);
         });
 
         View::composer(['layouts.segreteria', 'components.topbar'], function ($view) {
@@ -178,6 +212,10 @@ class AppServiceProvider extends ServiceProvider
         });
 
         app(DashboardKpiCacheInvalidator::class)->register();
+
+        Event::listen(DiagnosingHealth::class, function (): void {
+            app(ApplicationHealthService::class)->assertBootstrapHealthy();
+        });
 
         Queue::createPayloadUsing(function (string $connection, ?string $queue, array $payload): array {
             return array_merge($payload, [

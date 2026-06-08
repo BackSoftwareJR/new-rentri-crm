@@ -1,4 +1,15 @@
-<div class="op-bn-wizard">
+<div class="op-bn-wizard"
+    x-data="{ touchStartX: 0, touchStartY: 0 }"
+    @touchstart="touchStartX = $event.changedTouches[0].screenX; touchStartY = $event.changedTouches[0].screenY"
+    @touchend="
+        const touch = $event.changedTouches[0];
+        const dx = touch.screenX - touchStartX;
+        const dy = touch.screenY - touchStartY;
+        if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)) {
+            if (dx < 0) $wire.swipeNext();
+            else $wire.swipePrev();
+        }
+    ">
     @if ($success)
         <div class="op-bn-success">
             <div class="op-bn-success-icon">✅</div>

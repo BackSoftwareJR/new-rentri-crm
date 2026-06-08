@@ -25,6 +25,7 @@ class EcommercePaymentGatewayService
         private StripeWebhookIdempotencyService $webhookIdempotency,
         private StripeProductionPreflightService $stripePreflight,
         private StripeDisputeStubService $disputeStub,
+        private StripeDisputeService $disputeService,
     ) {}
 
     /**
@@ -32,8 +33,12 @@ class EcommercePaymentGatewayService
      *
      * @return array{gateway: string, checkout_token: ?string, stripe_session_id: ?string, checkout_url: ?string}
      */
-    public function initiatePayment(EcommerceOrdine $ordine, string $pagamentoMetodo): array
-    {
+    public function initiatePayment(
+        EcommerceOrdine $ordine,
+        string $pagamentoMetodo,
+        ?string $successUrl = null,
+        ?string $cancelUrl = null,
+    ): array {
         if ($this->runtime->isStub()) {
             return $this->initiateStubPayment($ordine);
         }
@@ -42,7 +47,7 @@ class EcommercePaymentGatewayService
             throw new RuntimeException('Preflight Stripe non superato. Verificare STRIPE_KEY, STRIPE_WEBHOOK_SECRET e STRIPE_CURRENCY.');
         }
 
-        return $this->initiateStripeCheckout($ordine, $pagamentoMetodo);
+        return $this->initiateStripeCheckout($ordine, $pagamentoMetodo, $successUrl, $cancelUrl);
     }
 
     public function confirmStubPayment(EcommerceOrdine $ordine, string $token, int $userId): EcommerceOrdine
@@ -84,6 +89,8 @@ class EcommercePaymentGatewayService
         if ($this->disputeStub->isDisputeEvent($type)) {
             if ($this->disputeStub->isStubEnabled()) {
                 $this->disputeStub->handleDisputeEvent($event);
+            } else {
+                $this->disputeService->handle($type, $event);
             }
 
             return;
@@ -181,10 +188,14 @@ class EcommercePaymentGatewayService
     /**
      * @return array{gateway: string, checkout_token: null, stripe_session_id: string, checkout_url: ?string}
      */
-    private function initiateStripeCheckout(EcommerceOrdine $ordine, string $pagamentoMetodo): array
-    {
-        $successUrl = route('segreteria.ecommerce.ordini.show', $ordine).'?stripe=success';
-        $cancelUrl = route('segreteria.ecommerce.ordini.show', $ordine).'?stripe=cancel';
+    private function initiateStripeCheckout(
+        EcommerceOrdine $ordine,
+        string $pagamentoMetodo,
+        ?string $successUrl = null,
+        ?string $cancelUrl = null,
+    ): array {
+        $successUrl ??= route('segreteria.ecommerce.ordini.show', $ordine).'?stripe=success';
+        $cancelUrl ??= route('segreteria.ecommerce.ordini.show', $ordine).'?stripe=cancel';
 
         $session = $this->stripeClient->createCheckoutSession([
             'mode'        => 'payment',

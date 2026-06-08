@@ -157,9 +157,9 @@
                     ],
                     [
                         'key' => 'revenue_eur',
-                        'title' => 'Revenue (stub ordini)',
+                        'title' => 'Revenue fatture pagate',
                         'value' => '€ ' . number_format($businessKpi['current']['ecommerce']['revenue_eur'], 2, ',', '.'),
-                        'href' => route('segreteria.ecommerce'),
+                        'href' => route('segreteria.fatture.index'),
                     ],
                 ];
                 $thresholdColors = ['alert' => '#dc2626', 'warn' => '#ca8a04', 'ok' => null];
@@ -198,6 +198,42 @@
     <p class="seg-dashboard-widgets-hint">Trascina le sezioni per riordinare — l'ordine viene salvato nel browser.</p>
 
     <div id="seg-dashboard-widgets" class="seg-dashboard-widgets" data-tour="dashboard-widgets">
+        @php
+            $rentriStatus = $kpi['rentri_status'] ?? [];
+            $rentriBadgeColor = ($rentriStatus['ambiente'] ?? 'sandbox') === 'live' ? '#166534' : '#92400e';
+            $rentriBadgeBg = ($rentriStatus['ambiente'] ?? 'sandbox') === 'live' ? '#dcfce7' : '#fef9c3';
+            $certDays = $rentriStatus['cert_days'] ?? null;
+            $certSubtitle = match (true) {
+                $certDays === null => 'Cert mTLS — scadenza N/D',
+                $certDays < 0 => 'Cert mTLS scaduto',
+                $certDays < 30 => "Cert mTLS scade tra {$certDays} gg",
+                default => "Cert mTLS valido ({$certDays} gg)",
+            };
+        @endphp
+
+        <section class="seg-dashboard-widget" data-widget-id="operativa-oggi" draggable="true">
+            <div class="seg-dashboard-widget-handle" aria-hidden="true">⋮⋮</div>
+            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 12px;">
+                <h2 class="mag-section-title" style="margin: 0;">Panoramica operativa</h2>
+                <span class="seg-badge" style="font-size: 11px; background: {{ $rentriBadgeBg }}; color: {{ $rentriBadgeColor }};">
+                    RENTRI {{ strtoupper($rentriStatus['ambiente'] ?? 'sandbox') }}
+                </span>
+                @if (($rentriStatus['health_ok'] ?? false) === false)
+                    <x-badge-stato stato="warning" label="Health check KO" />
+                @endif
+            </div>
+            <div class="seg-kpi-grid">
+                <x-kpi-card title="VFU oggi" :value="(string) ($kpi['vfu_oggi'] ?? 0)" subtitle="Accettati nelle ultime 24h" :href="route('segreteria.vfu.index')" />
+                <x-kpi-card title="VFU in bonifica" :value="(string) ($kpi['vfu_in_bonifica'] ?? 0)" valueColor="{{ ($kpi['vfu_in_bonifica'] ?? 0) > 0 ? '#ca8a04' : null }}" subtitle="Stato in bonifica" :href="route('segreteria.vfu.index')" />
+                <x-kpi-card title="VFU in smontaggio" :value="(string) ($kpi['vfu_in_smontaggio'] ?? 0)" subtitle="Stato in smontaggio" :href="route('segreteria.vfu.index')" />
+                <x-kpi-card title="Trasporti in transito" :value="(string) ($kpi['trasporti_in_transito'] ?? 0)" subtitle="In viaggio verso destinazione" :href="route('segreteria.trasporti')" />
+                <x-kpi-card title="Fatture in scadenza" :value="(string) ($kpi['fatture_in_scadenza'] ?? 0)" valueColor="{{ ($kpi['fatture_in_scadenza'] ?? 0) > 0 ? '#ca8a04' : null }}" subtitle="Entro 7 giorni" :href="route('segreteria.fatture.index')" />
+                <x-kpi-card title="Serbatoi in alert" :value="(string) ($kpi['magazzino_alert'] ?? 0)" valueColor="{{ ($kpi['magazzino_alert'] ?? 0) > 0 ? '#dc2626' : null }}" subtitle="Giacenza sotto soglia" :href="route('segreteria.magazzino')" />
+                <x-kpi-card title="Movimenti da trasmettere" :value="(string) ($kpi['rentri_pending'] ?? 0)" valueColor="{{ ($kpi['rentri_pending'] ?? 0) > 0 ? '#ca8a04' : null }}" subtitle="Registro non trasmesso (non locked)" :href="route('segreteria.rentri')" />
+                <x-kpi-card title="Revenue mese corrente" :value="'€ ' . number_format($kpi['revenue_mese_corrente'] ?? 0, 2, ',', '.')" subtitle="Fatture pagate · {{ $certSubtitle }}" :href="route('segreteria.fatture.index')" />
+            </div>
+        </section>
+
         @if ($kpi['rentri_pending'] > 0 || $kpi['rentri_dead_letter'] > 0)
             <section class="seg-dashboard-widget" data-widget-id="priority-rentri" draggable="true">
                 <div class="seg-dashboard-widget-handle" aria-hidden="true">⋮⋮</div>
@@ -301,6 +337,32 @@
                 <x-kpi-card title="Errori API" :value="(string) $kpi['rentri_errori']" valueColor="{{ $kpi['rentri_errori'] > 0 ? '#dc2626' : null }}" subtitle="Transazioni in errore (retry attivo)" :href="route('segreteria.rentri.transazioni')" />
                 <x-kpi-card title="Dead-letter RENTRI" :value="(string) $kpi['rentri_dead_letter']" valueColor="{{ $kpi['rentri_dead_letter'] > 0 ? '#dc2626' : null }}" subtitle="{{ $kpi['rentri_dead_letter'] > 0 ? 'Intervento manuale richiesto' : 'Nessuna transazione abbandonata' }}" :href="route('segreteria.rentri.transazioni')" />
                 <x-kpi-card title="Retry pianificati" :value="(string) $kpi['rentri_retry_pianificati']" valueColor="{{ $kpi['rentri_retry_pianificati'] > 0 ? '#ca8a04' : null }}" subtitle="Backoff MASE in coda" :href="route('segreteria.rentri.transazioni')" />
+            </div>
+        </section>
+
+        <section class="seg-dashboard-widget" data-widget-id="fatturazione" draggable="true">
+            <div class="seg-dashboard-widget-handle" aria-hidden="true">⋮⋮</div>
+            <h2 class="mag-section-title">Fatturazione</h2>
+            <div class="seg-kpi-grid">
+                <x-kpi-card
+                    title="Fatture emesse (mese)"
+                    :value="(string) ($kpi['fatturazione_mese']['count'] ?? 0)"
+                    :subtitle="'€ ' . number_format($kpi['fatturazione_mese']['totale'] ?? 0, 2, ',', '.') . ' totale'"
+                    :href="route('segreteria.fatture.index')"
+                />
+                <x-kpi-card
+                    title="Fatture scadute"
+                    :value="(string) ($kpi['fatture_scadute'] ?? 0)"
+                    valueColor="{{ ($kpi['fatture_scadute'] ?? 0) > 0 ? '#dc2626' : null }}"
+                    subtitle="Da sollecitare"
+                    :href="route('segreteria.fatture.index')"
+                />
+                <x-kpi-card
+                    title="Prossima scadenza"
+                    :value="$kpi['prossima_scadenza'] ? \Illuminate\Support\Carbon::parse($kpi['prossima_scadenza'])->format('d/m/Y') : '—'"
+                    subtitle="Prima fattura emessa in scadenza"
+                    :href="route('segreteria.fatture.index')"
+                />
             </div>
         </section>
 

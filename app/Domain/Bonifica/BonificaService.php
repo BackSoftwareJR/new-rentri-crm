@@ -8,6 +8,7 @@ use App\Models\CodiceCer;
 use App\Models\VfuRegistration;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
+use App\Services\Push\WebPushService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -19,17 +20,23 @@ class BonificaService
     private readonly BonificaMovimentoService $movimenti,
     private readonly BonificaNotificationService $notifications,
     private readonly BonificaPericolosiChecklistService $checklist,
+    private readonly WebPushService $webPush,
   ) {}
 
   /**
-   * @param  array{search?: string, filtro?: string}  $filters
+   * @param  array{search?: string, filtro?: string, solo_assegnati?: bool, operatore_id?: int}  $filters
    */
   public function queryVeicoliDaBonificare(array $filters = []): Builder
   {
     $query = VfuRegistration::query()
+      ->forActiveSito()
       ->whereIn('stato', [VfuStato::Accettato, VfuStato::AttesaBonifica, VfuStato::InBonifica])
       ->orderByRaw('CASE WHEN stato = ? THEN 0 ELSE 1 END', [VfuStato::InBonifica->value])
       ->orderByDesc('data_accettazione');
+
+    if (! empty($filters['solo_assegnati']) && ! empty($filters['operatore_id'])) {
+      $query->where('operatore_assegnato_id', (int) $filters['operatore_id']);
+    }
 
     if (! empty($filters['search'])) {
       $term = '%'.trim($filters['search']).'%';
@@ -217,7 +224,20 @@ class BonificaService
       $vfu->update(['stato' => VfuStato::Bonificato]);
     });
 
-    return $bonifica->fresh(['movimenti.codiceCer', 'vfuRegistration']);
+    $bonifica = $bonifica->fresh(['movimenti.codiceCer', 'vfuRegistration']);
+
+    try {
+      $this->webPush->sendToRoles(
+        'segreteria',
+        'VFU '.$bonifica->vfuRegistration->targa.' bonifica completata',
+        'Il veicolo è pronto per le fasi successive.',
+        route('segreteria.vfu.show', $bonifica->vfuRegistration),
+      );
+    } catch (\Throwable) {
+      // Push failures must never break core workflow.
+    }
+
+    return $bonifica;
   }
 
   public function faseCorrente(VfuRegistration $vfu): string

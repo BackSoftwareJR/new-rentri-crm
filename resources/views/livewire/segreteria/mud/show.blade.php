@@ -100,13 +100,13 @@
                 </button>
             @endif
             <button type="button" class="seg-btn seg-btn-secondary" wire:click="exportJson" wire:loading.attr="disabled">
-                Esporta JSON (stub)
+                Esporta JSON
             </button>
             <button type="button" class="seg-btn seg-btn-secondary" wire:click="exportXml" wire:loading.attr="disabled">
-                Esporta XML (stub)
+                Esporta XML
             </button>
             <button type="button" class="seg-btn seg-btn-secondary" wire:click="exportPdf" wire:loading.attr="disabled">
-                Esporta PDF (stub)
+                Esporta PDF
             </button>
         </div>
     </div>

@@ -2,10 +2,14 @@
 
 namespace App\Domain\Rentri;
 
+use App\Domain\Magazzino\MagazzinoService;
+use App\Jobs\RentriInitialSyncJob;
 use App\Models\RentriSetting;
 use App\Services\Rentri\Contracts\RentriApiClientInterface;
 use App\Services\Rentri\Contracts\RentriCertificateServiceInterface;
+use App\Services\Rentri\Contracts\RentriCodificheSyncInterface;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
 use RuntimeException;
 
@@ -87,19 +91,52 @@ class RentriOnboardingService
 
     /**
      * Test connessione live: health (blocchi FIR) + campione codifiche CER.
+     * On success, auto-syncs CER codifiche and ensures serbatoi exist.
      *
-     * @return array{health: array<string, mixed>, codifiche_count: int}
+     * @return array{health: array<string, mixed>, codifiche_count: int, codifiche_synced: int, serbatoi_created: int, sync_error: string|null}
      */
     public function testConnection(RentriApiClientInterface $apiClient): array
     {
         $health = $this->runHealthCheck($apiClient);
         $codifiche = $apiClient->fetchCodificheCer();
         $items = $codifiche['items'] ?? $codifiche['data'] ?? [];
+        $codificheCount = is_array($items) ? count($items) : 0;
+
+        $codificheSync = 0;
+        $serbatoi = 0;
+        $syncError = null;
+
+        if ($codificheCount > 0) {
+            try {
+                $syncResult = app(RentriCodificheSyncInterface::class)->sync();
+                $codificheSync = ($syncResult['created'] ?? 0) + ($syncResult['updated'] ?? 0) + ($syncResult['skipped'] ?? 0);
+                $serbatoi = app(MagazzinoService::class)->ensureSerbatoi();
+
+                Log::info('RENTRI onboarding: auto-sync completato', [
+                    'codifiche_synced' => $codificheSync,
+                    'serbatoi_created' => $serbatoi,
+                ]);
+            } catch (\Throwable $e) {
+                $syncError = $e->getMessage();
+                Log::warning('RENTRI onboarding: auto-sync fallito', ['error' => $syncError]);
+            }
+        }
 
         return [
-            'health'          => $health,
-            'codifiche_count' => is_array($items) ? count($items) : 0,
+            'health'           => $health,
+            'codifiche_count'  => $codificheCount,
+            'codifiche_synced' => $codificheSync,
+            'serbatoi_created' => $serbatoi,
+            'sync_error'       => $syncError,
         ];
+    }
+
+    /**
+     * Completes step 3 and dispatches the background initial sync job.
+     */
+    public function completeOnboarding(): void
+    {
+        RentriInitialSyncJob::dispatch();
     }
 
     public function stepLabel(int $step): string

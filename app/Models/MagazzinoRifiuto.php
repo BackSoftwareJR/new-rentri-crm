@@ -2,16 +2,21 @@
 
 namespace App\Models;
 
+use App\Traits\BelongsToSito;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class MagazzinoRifiuto extends Model
 {
+    use BelongsToSito;
+
     protected $table = 'magazzino_rifiuti';
 
     protected $fillable = [
         'codice_cer_id',
+        'sito_id',
         'quantita_attuale_kg',
+        'soglia_minima_kg',
         'oldest_load_date',
     ];
 
@@ -19,6 +24,7 @@ class MagazzinoRifiuto extends Model
     {
         return [
             'quantita_attuale_kg' => 'decimal:4',
+            'soglia_minima_kg'    => 'decimal:4',
             'oldest_load_date'    => 'date',
         ];
     }

@@ -75,6 +75,17 @@ return [
             'channel' => env('MAIL_LOG_CHANNEL'),
         ],
 
+        'pec' => [
+            'transport' => 'smtp',
+            'host' => env('PEC_HOST', 'smtp.pec-provider.it'),
+            'port' => env('PEC_PORT', 465),
+            'encryption' => env('PEC_ENCRYPTION', 'ssl'),
+            'username' => env('PEC_USERNAME'),
+            'password' => env('PEC_PASSWORD'),
+            'timeout' => null,
+            'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
+        ],
+
         'array' => [
             'transport' => 'array',
         ],

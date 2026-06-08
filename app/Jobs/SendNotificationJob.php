@@ -28,7 +28,9 @@ class SendNotificationJob implements ShouldQueue
         public Mailable $mailable,
         public string $recipient,
         public array $logContext = [],
-    ) {}
+    ) {
+        $this->onQueue('notifications');
+    }
 
     public function handle(NotificationService $notifications): void
     {

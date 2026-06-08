@@ -63,7 +63,10 @@ class RentriProductionSettingsTest extends TestCase
             ->assertHasNoErrors()
             ->assertSet('lastCodificheCount', 1);
 
-        Http::assertSentCount(2);
+        // health (blocchi FIR) + fetch CER + inline sync + RentriInitialSyncJob (CER + FIR blocchi)
+        Http::assertSentCount(5);
+        Http::assertSent(fn ($request) => str_contains($request->url(), 'vidimazione-formulari'));
+        Http::assertSent(fn ($request) => str_contains($request->url(), 'codifiche/v1.0/cer'));
     }
 
     public function test_live_api_translates_401_error_in_italian(): void

@@ -32,11 +32,46 @@ class StripeReconciliationReportService
     public function summary(?int $days = null): array
     {
         $days ??= $this->daysWindow();
-        $rows = $this->rows($days);
 
-        $matched = $rows->where('status', 'matched')->count();
-        $crmOnly = $rows->where('status', 'crm_only')->count();
-        $stripeOnly = $rows->where('status', 'stripe_only')->count();
+        return $this->summaryFromRows($this->rows($days), $days);
+    }
+
+    /**
+     * KPI + anteprima tabella per l'hub e-commerce (una sola scansione dati).
+     *
+     * @return array{
+     *     summary: array<string, mixed>,
+     *     rows: Collection<int, array<string, mixed>>
+     * }
+     */
+    public function hubSnapshot(?int $days = null, int $previewLimit = 10): array
+    {
+        $days ??= $this->daysWindow();
+        $rows = $this->rows($days);
+        $limit = max(1, min(25, $previewLimit));
+
+        return [
+            'summary' => $this->summaryFromRows($rows, $days),
+            'rows'    => $rows->take($limit)->values(),
+        ];
+    }
+
+    /**
+     * @param  Collection<int, array<string, mixed>>  $rows
+     * @return array{
+     *     days: int,
+     *     ordini_stripe: int,
+     *     webhook_events: int,
+     *     matched: int,
+     *     crm_only: int,
+     *     stripe_only: int,
+     *     amount_matched_eur: float,
+     *     open_disputes: int
+     * }
+     */
+    public function summaryFromRows(Collection $rows, ?int $days = null): array
+    {
+        $days ??= $this->daysWindow();
 
         return [
             'days'               => $days,
@@ -45,9 +80,9 @@ class StripeReconciliationReportService
                 ->where('processed_at', '>=', now()->subDays($days))
                 ->where('event_type', 'checkout.session.completed')
                 ->count(),
-            'matched'            => $matched,
-            'crm_only'           => $crmOnly,
-            'stripe_only'        => $stripeOnly,
+            'matched'            => $rows->where('status', 'matched')->count(),
+            'crm_only'           => $rows->where('status', 'crm_only')->count(),
+            'stripe_only'        => $rows->where('status', 'stripe_only')->count(),
             'amount_matched_eur' => round(
                 (float) $rows->where('status', 'matched')->sum('amount_eur'),
                 2,

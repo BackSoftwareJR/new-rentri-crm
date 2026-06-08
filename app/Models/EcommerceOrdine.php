@@ -6,6 +6,7 @@ use App\Enums\OrdineEcommerceStato;
 use App\Models\Concerns\HasDemoScope;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class EcommerceOrdine extends Model
 {
@@ -44,5 +45,20 @@ class EcommerceOrdine extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function stripeWebhookEvents(): HasMany
+    {
+        return $this->hasMany(StripeWebhookEvent::class, 'ecommerce_ordine_id');
+    }
+
+    public function stripeDisputes(): HasMany
+    {
+        return $this->hasMany(StripeDispute::class, 'ordine_id');
+    }
+
+    public function fattura(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Fattura::class, 'ecommerce_ordine_id');
     }
 }

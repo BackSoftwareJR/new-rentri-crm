@@ -35,9 +35,9 @@ class EcommerceService
         $base = EcommerceProdotto::query()->where('attivo', true);
 
         return [
-            'totale'      => (clone $base)->count(),
+            'totale' => (clone $base)->count(),
             'disponibili' => (clone $base)->where('giacenza', '>', 0)->count(),
-            'esauriti'    => (clone $base)->where('giacenza', '<=', 0)->count(),
+            'esauriti' => (clone $base)->where('giacenza', '<=', 0)->count(),
         ];
     }
 
@@ -146,8 +146,8 @@ class EcommerceService
                 }
 
                 return [
-                    'prodotto'  => $prodotto,
-                    'qty'       => $qty,
+                    'prodotto' => $prodotto,
+                    'qty' => $qty,
                     'subtotale' => round((float) $prodotto->prezzo * $qty, 2),
                 ];
             })
@@ -184,12 +184,12 @@ class EcommerceService
                 $totale += $subtotale;
 
                 $righe[] = [
-                    'prodotto_id'     => $prodotto->id,
-                    'codice'          => $prodotto->codice,
-                    'nome'            => $prodotto->nome,
-                    'qty'             => $line['qty'],
+                    'prodotto_id' => $prodotto->id,
+                    'codice' => $prodotto->codice,
+                    'nome' => $prodotto->nome,
+                    'qty' => $line['qty'],
                     'prezzo_unitario' => (float) $prodotto->prezzo,
-                    'subtotale'       => $subtotale,
+                    'subtotale' => $subtotale,
                 ];
 
                 $prodotto->update(['giacenza' => $prodotto->giacenza - $line['qty']]);
@@ -197,9 +197,9 @@ class EcommerceService
 
             $ordine = EcommerceOrdine::create([
                 'user_id' => $userId,
-                'stato'   => OrdineEcommerceStato::Bozza,
-                'totale'  => round($totale, 2),
-                'righe'   => $righe,
+                'stato' => OrdineEcommerceStato::Bozza,
+                'totale' => round($totale, 2),
+                'righe' => $righe,
             ]);
 
             $this->clearCart();
@@ -210,8 +210,8 @@ class EcommerceService
                 $ordine,
                 [
                     'ordine_id' => $ordine->id,
-                    'totale'    => (float) $ordine->totale,
-                    'righe'     => count($righe),
+                    'totale' => (float) $ordine->totale,
+                    'righe' => count($righe),
                 ],
                 $userId,
             );
@@ -243,9 +243,9 @@ class EcommerceService
 
     /**
      * @param  array{stato?: string|null}  $filters
-     * @return \Illuminate\Support\Collection<int, EcommerceOrdine>
+     * @return Collection<int, EcommerceOrdine>
      */
-    public function recentOrdini(array $filters = [], int $limit = 10): \Illuminate\Support\Collection
+    public function recentOrdini(array $filters = [], int $limit = 10): Collection
     {
         $query = EcommerceOrdine::query()->with('user:id,name');
 
@@ -269,20 +269,44 @@ class EcommerceService
     public function statoOrdineBadge(OrdineEcommerceStato $stato): string
     {
         return match ($stato) {
-            OrdineEcommerceStato::Confermato          => 'success',
-            OrdineEcommerceStato::PagamentoInAttesa   => 'info',
-            OrdineEcommerceStato::Annullato           => 'muted',
-            OrdineEcommerceStato::Bozza               => 'warning',
+            OrdineEcommerceStato::Confermato => 'success',
+            OrdineEcommerceStato::PagamentoInAttesa => 'info',
+            OrdineEcommerceStato::Annullato => 'muted',
+            OrdineEcommerceStato::Bozza => 'warning',
         };
     }
 
     public function statoOrdineLabel(OrdineEcommerceStato $stato): string
     {
         return match ($stato) {
-            OrdineEcommerceStato::Confermato          => 'Confermato',
-            OrdineEcommerceStato::PagamentoInAttesa   => 'Pagamento in attesa',
-            OrdineEcommerceStato::Annullato           => 'Annullato',
-            OrdineEcommerceStato::Bozza               => 'Bozza',
+            OrdineEcommerceStato::Confermato => 'Confermato',
+            OrdineEcommerceStato::PagamentoInAttesa => 'Pagamento in attesa',
+            OrdineEcommerceStato::Annullato => 'Annullato',
+            OrdineEcommerceStato::Bozza => 'Bozza',
+        };
+    }
+
+    public function statoPagamentoBadge(EcommerceOrdine $ordine): string
+    {
+        return match ($ordine->stato) {
+            OrdineEcommerceStato::Confermato => 'success',
+            OrdineEcommerceStato::Annullato => 'muted',
+            OrdineEcommerceStato::PagamentoInAttesa => $ordine->payment_gateway === 'stripe' ? 'info' : 'warning',
+            OrdineEcommerceStato::Bozza => 'muted',
+        };
+    }
+
+    public function statoPagamentoLabel(EcommerceOrdine $ordine): string
+    {
+        return match ($ordine->stato) {
+            OrdineEcommerceStato::Confermato => $ordine->payment_gateway === 'stripe'
+                ? 'Pagato (Stripe)'
+                : 'Pagato',
+            OrdineEcommerceStato::Annullato => 'Annullato',
+            OrdineEcommerceStato::PagamentoInAttesa => $ordine->payment_gateway === 'stripe'
+                ? 'In attesa — Stripe'
+                : 'In attesa conferma',
+            OrdineEcommerceStato::Bozza => 'Non avviato',
         };
     }
 

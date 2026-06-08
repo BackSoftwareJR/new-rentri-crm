@@ -11,6 +11,7 @@ use App\Models\MagazzinoRifiuto;
 use App\Models\MagazzinoSvuotamento;
 use App\Models\RegistroMovimento;
 use App\Models\Trasporto;
+use App\Services\Push\WebPushService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
@@ -19,6 +20,7 @@ class TrasportoService
 {
     public function __construct(
         private MagazzinoService $magazzino,
+        private WebPushService $webPush,
     ) {}
 
     /**
@@ -37,6 +39,19 @@ class TrasportoService
     }
 
     /**
+     * @param  array{
+     *   codice_cer_id?: int|null,
+     *   stato?: string|null,
+     *   q?: string|null,
+     * }  $filters
+     * @return \Illuminate\Support\Collection<int, Trasporto>
+     */
+    public function exportAll(array $filters = []): \Illuminate\Support\Collection
+    {
+        return $this->query($filters)->get();
+    }
+
+    /**
      * @param  array{stato?: string|null, codice_cer_id?: int|null, q?: string|null}  $filters
      * @return array<string, int>
      */
@@ -50,6 +65,43 @@ class TrasportoService
             'in_transito'     => (clone $base)->where('stato', TrasportoStato::InTransito)->count(),
             'completati'      => (clone $base)->where('stato', TrasportoStato::Completato)->count(),
         ];
+    }
+
+    /**
+     * @param  array{
+     *   anagrafica_trasportatore_id?: int|null,
+     *   anagrafica_destinatario_id: int,
+     *   codice_cer_id: int,
+     *   quantita_kg: float|int|string,
+     *   targa_mezzo?: string|null,
+     *   conducente?: string|null,
+     *   data_trasporto?: string|null,
+     *   vfu_registration_id?: int|null,
+     *   fir_blocco_id?: int|null,
+     *   note?: string|null,
+     * }  $data
+     */
+    public function crea(array $data): Trasporto
+    {
+        $quantita = round((float) $data['quantita_kg'], 4);
+
+        if ($quantita <= 0) {
+            throw new \InvalidArgumentException('Indicare una quantità maggiore di zero.');
+        }
+
+        return Trasporto::create([
+            'anagrafica_trasportatore_id' => $data['anagrafica_trasportatore_id'] ?? null,
+            'anagrafica_destinatario_id'  => (int) $data['anagrafica_destinatario_id'],
+            'codice_cer_id'               => (int) $data['codice_cer_id'],
+            'quantita_kg'                 => $quantita,
+            'targa_mezzo'                 => isset($data['targa_mezzo']) ? strtoupper(trim((string) $data['targa_mezzo'])) ?: null : null,
+            'conducente'                  => isset($data['conducente']) ? trim((string) $data['conducente']) ?: null : null,
+            'data_trasporto'              => $data['data_trasporto'] ?? now()->toDateString(),
+            'vfu_registration_id'         => $data['vfu_registration_id'] ?? null,
+            'fir_blocco_id'               => $data['fir_blocco_id'] ?? null,
+            'note'                        => isset($data['note']) ? trim((string) $data['note']) ?: null : null,
+            'stato'                       => TrasportoStato::InPreparazione,
+        ]);
     }
 
     public function creaDaSvuotamento(MagazzinoSvuotamento $svuotamento): Trasporto
@@ -84,7 +136,20 @@ class TrasportoService
 
         $trasporto->update(['stato' => TrasportoStato::InTransito]);
 
-        return $trasporto->fresh();
+        $fresh = $trasporto->fresh();
+
+        try {
+            $this->webPush->sendToRoles(
+                'segreteria',
+                'Trasporto #'.$fresh->id.' in corso',
+                'Il trasporto è stato avviato ed è in transito.',
+                route('segreteria.trasporti.show', $fresh),
+            );
+        } catch (\Throwable) {
+            // Push failures must never break core workflow.
+        }
+
+        return $fresh;
     }
 
     /**
@@ -214,11 +279,14 @@ class TrasportoService
     private function query(array $filters): Builder
     {
         $query = Trasporto::query()
+            ->forActiveSito()
             ->with([
                 'codiceCer:id,codice,descrizione,um',
                 'destinatario:id,ragione_sociale',
                 'svuotamento:id,trasportatore_anagrafica_id,trasportatore_omesso',
                 'svuotamento.trasportatore:id,ragione_sociale',
+                'firCollegato:id,trasporto_id,stato',
+                'fir:id,stato',
             ]);
 
         if (! empty($filters['codice_cer_id'])) {

@@ -7,12 +7,13 @@ use App\Support\Demo\DemoContext;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
 use Spatie\Activitylog\Models\Activity;
 
 class ActivityLogService
 {
     /** @var list<string> */
-    public const MODULI = ['rentri', 'ecommerce', 'mud', 'legacy', 'audit'];
+    public const MODULI = ['auth', 'vfu', 'fatturazione', 'settings', 'rentri', 'ecommerce', 'mud', 'legacy', 'audit'];
 
     public function record(
         string $modulo,
@@ -125,7 +126,11 @@ class ActivityLogService
     public function moduloLabel(string $modulo): string
     {
         return match ($modulo) {
-            'rentri'    => 'RENTRI',
+            'auth'        => 'Autenticazione',
+            'vfu'         => 'VFU',
+            'fatturazione'=> 'Fatturazione',
+            'settings'    => 'Impostazioni',
+            'rentri'      => 'RENTRI',
             'ecommerce' => 'E-commerce',
             'mud'       => 'MUD',
             'legacy'    => 'Migrazione legacy',
@@ -149,6 +154,104 @@ class ActivityLogService
             (int) $props->get('skipped', 0),
             $props->get('dry_run') ? 'sì' : 'no',
         );
+    }
+
+    /**
+     * @return Collection<int, Activity>
+     */
+    public function forSubject(string $subjectType, int $subjectId, int $limit = 50): Collection
+    {
+        return Activity::query()
+            ->with('causer:id,name')
+            ->where('subject_type', $subjectType)
+            ->where('subject_id', $subjectId)
+            ->orderByDesc('created_at')
+            ->limit(max(1, min(100, $limit)))
+            ->get();
+    }
+
+    /**
+     * @return array{icon: string, color: string, detail: ?string}
+     */
+    public function eventPresentation(Activity $activity): array
+    {
+        $description = strtolower((string) $activity->description);
+        $modulo = (string) $activity->log_name;
+        $props = $activity->properties?->toArray() ?? [];
+
+        $color = match ($modulo) {
+            'rentri'       => '#7c3aed',
+            'fatturazione' => '#2563eb',
+            'vfu'          => '#059669',
+            'trasporti', 'trasporto' => '#0891b2',
+            'ecommerce'    => '#db2777',
+            default        => '#64748b',
+        };
+
+        $icon = '•';
+
+        if (str_contains($description, 'email') || str_contains($description, 'pec')) {
+            $icon = '✉';
+            $color = '#2563eb';
+        } elseif (str_contains($description, 'emessa') || str_contains($description, 'pagament')) {
+            $icon = '€';
+            $color = '#16a34a';
+        } elseif (str_contains($description, 'annull') || str_contains($description, 'elimin')) {
+            $icon = '✕';
+            $color = '#dc2626';
+        } elseif (str_contains($description, 'rottam') || str_contains($description, 'chius')) {
+            $icon = '✓';
+            $color = '#059669';
+        } elseif ($modulo === 'rentri' || str_contains($description, 'rentri') || str_contains($description, 'xfir') || str_contains($description, 'fir')) {
+            $icon = '↗';
+            $color = '#7c3aed';
+        } elseif (str_contains($description, 'creat')) {
+            $icon = '+';
+            $color = '#16a34a';
+        } elseif (str_contains($description, 'aggiorn') || str_contains($description, 'modific')) {
+            $icon = '↻';
+            $color = '#ca8a04';
+        }
+
+        if (isset($props['stato'])) {
+            $detail = 'Stato: '.$props['stato'];
+        } elseif ($changed = $this->changedFieldsDetail($props)) {
+            $detail = $changed;
+        } elseif ($legacy = $this->legacyImportDetail($activity)) {
+            $detail = $legacy;
+        } else {
+            $detail = null;
+        }
+
+        return [
+            'icon'   => $icon,
+            'color'  => $color,
+            'detail' => $detail,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $properties
+     */
+    private function changedFieldsDetail(array $properties): ?string
+    {
+        $old = $properties['old'] ?? null;
+        $attributes = $properties['attributes'] ?? null;
+
+        if (! is_array($old) && ! is_array($attributes)) {
+            return null;
+        }
+
+        $fields = array_unique(array_merge(
+            is_array($old) ? array_keys($old) : [],
+            is_array($attributes) ? array_keys($attributes) : [],
+        ));
+
+        if ($fields === []) {
+            return null;
+        }
+
+        return 'Campi: '.implode(', ', array_slice($fields, 0, 5));
     }
 
     /**

@@ -33,10 +33,15 @@ class SerbatoioShow extends SegreteriaPage
 
     public string $svuotamento_note = '';
 
+    public string $soglia_minima_kg = '';
+
     public function mount(CodiceCer $codiceCer, MagazzinoSvuotamentoService $svuotamenti): void
     {
         $this->authorize('magazzino.view', $codiceCer);
         $this->codiceCer = $codiceCer->load('magazzino');
+        $this->soglia_minima_kg = $codiceCer->magazzino?->soglia_minima_kg !== null
+            ? (string) $codiceCer->magazzino->soglia_minima_kg
+            : '';
 
         if ($svuotamenti->puoRichiedereSvuotamento($this->codiceCer)) {
             $this->svuotamento_quantita_kg = (string) $svuotamenti->quantitaDisponibile($this->codiceCer->id);
@@ -109,6 +114,26 @@ class SerbatoioShow extends SegreteriaPage
         $this->resetValidation();
 
         session()->flash('success', 'Richiesta di svuotamento registrata. La giacenza resta impegnata fino al trasporto.');
+    }
+
+    public function salvaSogliaMinima(MagazzinoService $magazzino): void
+    {
+        $this->authorize('magazzino.caricoManuale', $this->codiceCer);
+
+        $validated = $this->validate([
+            'soglia_minima_kg' => ['nullable', 'numeric', 'min:0', 'max:9999999'],
+        ]);
+
+        $value = filled($validated['soglia_minima_kg'] ?? null)
+            ? (float) $validated['soglia_minima_kg']
+            : null;
+
+        $magazzino->updateSogliaMinima($this->codiceCer->id, $value);
+        $this->codiceCer->refresh()->load('magazzino');
+        $this->soglia_minima_kg = $value !== null ? (string) $value : '';
+        $this->resetValidation();
+
+        session()->flash('success', 'Soglia minima giacenza aggiornata.');
     }
 
     public function render(

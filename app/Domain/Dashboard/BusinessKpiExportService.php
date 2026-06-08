@@ -16,7 +16,7 @@ class BusinessKpiExportService
         'ordini_confermati' => 'Ordini e-commerce confermati',
         'vfu_accettate'     => 'VFU accettate',
         'magazzino_kg'      => 'Movimenti magazzino (kg)',
-        'revenue_eur'       => 'Revenue (stub ordini EUR)',
+        'revenue_eur'       => 'Revenue fatture pagate (EUR)',
     ];
 
     public function toCsv(string $periodKey = 'last_7_days'): string

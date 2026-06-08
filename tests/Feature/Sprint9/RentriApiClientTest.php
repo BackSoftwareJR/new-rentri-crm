@@ -103,6 +103,31 @@ class RentriApiClientTest extends TestCase
         $this->assertSame($headersA['X-RENTRI-Signature-Alg'], 'STUB-HMAC-SHA256');
         $this->assertSame('test-operatore.p12', $headersA['X-RENTRI-Cert-Id']);
         $this->assertNotSame($headersA['X-RENTRI-Signature'], $headersB['X-RENTRI-Signature']);
+
+        // Agid-JWT-Signature must be present on every request (AgID ID_AUTH_REST_02)
+        $this->assertArrayHasKey('Agid-JWT-Signature', $headersA);
+        $this->assertStringStartsWith('Bearer ', $headersA['Agid-JWT-Signature']);
+    }
+
+    public function test_sign_request_includes_agid_jwt_signature_header(): void
+    {
+        $settings = RentriSetting::instance();
+        $certs = app(RentriCertificateServiceInterface::class);
+
+        $headers = $certs->signRequest($settings, 'POST', '/fir/vidima', ['payload' => 'test']);
+
+        $this->assertArrayHasKey('Agid-JWT-Signature', $headers);
+        $jwt = $headers['Agid-JWT-Signature'];
+        $this->assertStringStartsWith('Bearer ', $jwt);
+
+        // JWT must have three base64url parts (header.payload.signature)
+        $token = substr($jwt, 7); // strip "Bearer "
+        $parts = explode('.', $token);
+        $this->assertCount(3, $parts, 'Agid-JWT-Signature deve essere un JWT a tre parti (header.payload.signature)');
+
+        // In testing env the stub token is returned — just verify structure
+        $this->assertNotEmpty($parts[0]);
+        $this->assertNotEmpty($parts[1]);
     }
 
     public function test_rejects_expired_certificate(): void
@@ -125,5 +150,9 @@ class RentriApiClientTest extends TestCase
         $this->assertArrayHasKey('headers', $tx->request_json);
         $this->assertStringContainsString('stub:', $tx->request_json['headers']['X-RENTRI-Signature'] ?? '');
         $this->assertStringEndsWith('…', $tx->request_json['headers']['X-RENTRI-Signature']);
+
+        // Agid-JWT-Signature must also be truncated in logs
+        $this->assertArrayHasKey('Agid-JWT-Signature', $tx->request_json['headers']);
+        $this->assertStringEndsWith('…', $tx->request_json['headers']['Agid-JWT-Signature']);
     }
 }

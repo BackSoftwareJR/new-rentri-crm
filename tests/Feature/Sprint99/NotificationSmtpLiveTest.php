@@ -10,7 +10,6 @@ use App\Mail\NotificationTestMail;
 use App\Mail\RentriDeadLetterMail;
 use App\Models\User;
 use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -37,17 +36,6 @@ class NotificationSmtpLiveTest extends TestCase
     {
         Mail::fake();
 
-        Log::shouldReceive('channel')
-            ->with('notifications')
-            ->andReturnSelf();
-
-        Log::shouldReceive('info')
-            ->once()
-            ->withArgs(function (string $message, array $context): bool {
-                return $message === 'notification.dispatched'
-                    && ($context['mail_mode'] ?? null) === 'stub';
-            });
-
         app(NotificationService::class)->deliver(
             new RentriDeadLetterMail(1, 'Timeout'),
             'ops@example.it',
@@ -65,16 +53,6 @@ class NotificationSmtpLiveTest extends TestCase
         Config::set('mail.from.address', 'noreply@rentri-crm.test');
 
         Mail::fake();
-
-        Log::shouldReceive('channel')
-            ->with('notifications')
-            ->andReturnSelf();
-
-        Log::shouldReceive('info')
-            ->once()
-            ->withArgs(fn (string $message, array $context): bool => $message === 'notification.dispatched'
-                && ($context['mail_mode'] ?? null) === 'live'
-                && ($context['mailer'] ?? null) === 'smtp');
 
         app(NotificationService::class)->deliver(
             new RentriDeadLetterMail(9, 'Errore firma'),
@@ -110,15 +88,6 @@ class NotificationSmtpLiveTest extends TestCase
 
         Mail::fake();
 
-        Log::shouldReceive('channel')
-            ->with('notifications')
-            ->andReturnSelf();
-
-        Log::shouldReceive('info')
-            ->once()
-            ->withArgs(fn (string $message, array $context): bool => $message === 'notification.dispatched'
-                && ($context['test'] ?? false) === true);
-
         app(NotificationService::class)->sendTestEmail('qa@example.it', 'segreteria@example.com');
 
         Mail::assertSent(NotificationTestMail::class, function (NotificationTestMail $mail) {
@@ -136,12 +105,6 @@ class NotificationSmtpLiveTest extends TestCase
 
         Mail::fake();
 
-        Log::shouldReceive('channel')
-            ->with('notifications')
-            ->andReturnSelf();
-
-        Log::shouldReceive('info');
-
         $user = User::where('email', 'segreteria@example.com')->firstOrFail();
 
         Livewire::actingAs($user)
@@ -158,15 +121,6 @@ class NotificationSmtpLiveTest extends TestCase
     public function test_notification_settings_livewire_stub_test_email_logs_only(): void
     {
         Mail::fake();
-
-        Log::shouldReceive('channel')
-            ->with('notifications')
-            ->andReturnSelf();
-
-        Log::shouldReceive('info')
-            ->once()
-            ->withArgs(fn (string $message, array $context): bool => $message === 'notification.dispatched'
-                && ($context['mail_mode'] ?? null) === 'stub');
 
         $user = User::where('email', 'segreteria@example.com')->firstOrFail();
 

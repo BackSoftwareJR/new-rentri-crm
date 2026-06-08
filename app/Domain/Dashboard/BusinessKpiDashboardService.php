@@ -4,6 +4,7 @@ namespace App\Domain\Dashboard;
 
 use App\Enums\OrdineEcommerceStato;
 use App\Models\EcommerceOrdine;
+use App\Models\Fattura;
 use App\Models\RegistroMovimento;
 use App\Models\VfuRegistration;
 use Illuminate\Support\Carbon;
@@ -61,7 +62,11 @@ class BusinessKpiDashboardService
             ->whereBetween('data_movimento', [$fromDay, $toDay]);
 
         $magazzinoKg = (float) ((clone $movimentiQuery)->sum('peso_kg') ?? 0);
-        $revenueEur = (float) ((clone $ordiniQuery)->sum('totale') ?? 0);
+        $revenueEur = (float) Fattura::query()
+            ->where('stato', 'pagata')
+            ->whereDate('data_pagamento', '>=', $fromDay)
+            ->whereDate('data_pagamento', '<=', $toDay)
+            ->sum('totale');
 
         return [
             'periodo' => [

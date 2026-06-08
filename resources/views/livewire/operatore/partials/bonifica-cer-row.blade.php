@@ -8,9 +8,12 @@
         <input type="number"
             min="0"
             step="0.1"
+            inputmode="decimal"
+            autocomplete="off"
             class="op-bn-qty-input"
             wire:model.blur="quantita.{{ $cer->id }}"
-            placeholder="0" />
+            placeholder="0"
+            aria-label="Quantità {{ $cer->codice }}" />
         <button type="button" class="op-bn-stepper" wire:click="incrementQty({{ $cer->id }})" aria-label="Aumenta">+</button>
     </div>
 </div>

@@ -43,4 +43,9 @@ class AnagraficaPolicy
     {
         return $this->demoScopeAllows($anagrafica);
     }
+
+    public function restore(User $user, Anagrafica $anagrafica): bool
+    {
+        return $user->hasRole('admin');
+    }
 }

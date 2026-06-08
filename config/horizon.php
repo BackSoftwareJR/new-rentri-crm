@@ -83,7 +83,7 @@ return [
     |
     */
 
-    'middleware' => ['web'],
+    'middleware' => ['web', 'auth', 'role:admin'],
 
     /*
     |--------------------------------------------------------------------------
@@ -98,6 +98,9 @@ return [
 
     'waits' => [
         'redis:default' => 60,
+        'redis:rentri' => 120,
+        'redis:notifications' => 90,
+        'redis:exports' => 180,
     ],
 
     /*
@@ -197,7 +200,7 @@ return [
     */
 
     'defaults' => [
-        'supervisor-1' => [
+        'supervisor-default' => [
             'connection' => 'redis',
             'queue' => ['default'],
             'balance' => 'auto',
@@ -206,24 +209,84 @@ return [
             'maxTime' => 0,
             'maxJobs' => 0,
             'memory' => 128,
-            'tries' => 1,
+            'tries' => 3,
+            'timeout' => 90,
+            'nice' => 0,
+        ],
+        'supervisor-rentri' => [
+            'connection' => 'redis',
+            'queue' => ['rentri'],
+            'balance' => 'auto',
+            'autoScalingStrategy' => 'time',
+            'maxProcesses' => 1,
+            'maxTime' => 0,
+            'maxJobs' => 0,
+            'memory' => 256,
+            'tries' => 5,
+            'timeout' => 300,
+            'nice' => 0,
+        ],
+        'supervisor-notifications' => [
+            'connection' => 'redis',
+            'queue' => ['notifications'],
+            'balance' => 'auto',
+            'autoScalingStrategy' => 'time',
+            'maxProcesses' => 1,
+            'maxTime' => 0,
+            'maxJobs' => 0,
+            'memory' => 128,
+            'tries' => 3,
             'timeout' => 60,
+            'nice' => 0,
+        ],
+        'supervisor-exports' => [
+            'connection' => 'redis',
+            'queue' => ['exports'],
+            'balance' => 'simple',
+            'maxProcesses' => 1,
+            'maxTime' => 0,
+            'maxJobs' => 0,
+            'memory' => 256,
+            'tries' => 2,
+            'timeout' => 600,
             'nice' => 0,
         ],
     ],
 
     'environments' => [
         'production' => [
-            'supervisor-1' => [
-                'maxProcesses' => 10,
+            'supervisor-default' => [
+                'maxProcesses' => 5,
                 'balanceMaxShift' => 1,
                 'balanceCooldown' => 3,
+            ],
+            'supervisor-rentri' => [
+                'maxProcesses' => 4,
+                'balanceMaxShift' => 1,
+                'balanceCooldown' => 3,
+            ],
+            'supervisor-notifications' => [
+                'maxProcesses' => 3,
+                'balanceMaxShift' => 1,
+                'balanceCooldown' => 3,
+            ],
+            'supervisor-exports' => [
+                'maxProcesses' => 2,
             ],
         ],
 
         'local' => [
-            'supervisor-1' => [
-                'maxProcesses' => 3,
+            'supervisor-default' => [
+                'maxProcesses' => 2,
+            ],
+            'supervisor-rentri' => [
+                'maxProcesses' => 2,
+            ],
+            'supervisor-notifications' => [
+                'maxProcesses' => 1,
+            ],
+            'supervisor-exports' => [
+                'maxProcesses' => 1,
             ],
         ],
     ],

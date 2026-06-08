@@ -283,6 +283,86 @@ class RentriApiClient implements RentriApiClientInterface
         throw new RentriApiException('Timeout attesa esito invio xFIR firmato RENTRI.', 408);
     }
 
+    public function lookupOperatore(string $cfOrPiva): array
+    {
+        $cfOrPiva = strtoupper(trim($cfOrPiva));
+
+        if ($cfOrPiva === '') {
+            return $this->operatoreNotFound();
+        }
+
+        if ($this->usesStub()) {
+            return $this->stubLookupOperatore($cfOrPiva);
+        }
+
+        try {
+            $response = $this->executePath(
+                'GET',
+                RentriEndpoints::operatoreLookupPath($cfOrPiva),
+                [],
+                [],
+                '/operatori/lookup',
+                'operatori',
+            );
+
+            return $this->parseOperatoreResponse($response);
+        } catch (RentriApiException $e) {
+            if ($e->getCode() === 404) {
+                return $this->operatoreNotFound();
+            }
+
+            throw $e;
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $response
+     * @return array{iscritto: bool, numero_iscrizione: string|null, validita_autorizzazione: string|null, ragione_sociale: string|null, raw: array<string, mixed>}
+     */
+    protected function parseOperatoreResponse(array $response): array
+    {
+        $iscritto = isset($response['stato_iscrizione'])
+            ? in_array(strtolower((string) $response['stato_iscrizione']), ['iscritto', 'attivo', 'active'], true)
+            : ($response['iscritto'] ?? false);
+
+        return [
+            'iscritto'               => (bool) $iscritto,
+            'numero_iscrizione'      => isset($response['numero_iscrizione']) ? (string) $response['numero_iscrizione'] : null,
+            'validita_autorizzazione' => isset($response['validita_autorizzazione']) ? (string) $response['validita_autorizzazione'] : null,
+            'ragione_sociale'        => isset($response['ragione_sociale']) ? (string) $response['ragione_sociale'] : null,
+            'raw'                    => $response,
+        ];
+    }
+
+    /**
+     * @return array{iscritto: bool, numero_iscrizione: string|null, validita_autorizzazione: string|null, ragione_sociale: string|null, raw: array<string, mixed>}
+     */
+    protected function operatoreNotFound(): array
+    {
+        return [
+            'iscritto'               => false,
+            'numero_iscrizione'      => null,
+            'validita_autorizzazione' => null,
+            'ragione_sociale'        => null,
+            'raw'                    => [],
+        ];
+    }
+
+    /**
+     * @return array{iscritto: bool, numero_iscrizione: string|null, validita_autorizzazione: string|null, ragione_sociale: string|null, raw: array<string, mixed>}
+     */
+    protected function stubLookupOperatore(string $cfOrPiva): array
+    {
+        // Stub: any non-empty CF returns a registered result for sandbox testing.
+        return [
+            'iscritto'               => true,
+            'numero_iscrizione'      => 'STUB-'.$cfOrPiva,
+            'validita_autorizzazione' => now()->addYear()->format('Y-m-d'),
+            'ragione_sociale'        => 'Operatore RENTRI (stub)',
+            'raw'                    => ['stub' => true, 'cf' => $cfOrPiva],
+        ];
+    }
+
     public function replayTransazione(RentriTransazione $transazione): array
     {
         /** @var array<string, mixed> $request */
@@ -859,6 +939,7 @@ class RentriApiClient implements RentriApiClientInterface
             '/xfir/trasmetti', '/xfir/trasmetti/status', '/xfir/trasmetti/result' => 'xfir',
             '/health', '/fir/blocchi' => 'health',
             '/codifiche/cer' => 'codifiche',
+            '/operatori/lookup' => 'operatori',
             default => 'generic',
         };
     }
@@ -888,8 +969,10 @@ class RentriApiClient implements RentriApiClientInterface
     {
         $logged = $headers;
 
-        if (isset($logged['X-RENTRI-Signature'])) {
-            $logged['X-RENTRI-Signature'] = Str::limit($logged['X-RENTRI-Signature'], 24, '…');
+        foreach (['X-RENTRI-Signature', 'Agid-JWT-Signature'] as $sensitiveHeader) {
+            if (isset($logged[$sensitiveHeader])) {
+                $logged[$sensitiveHeader] = Str::limit($logged[$sensitiveHeader], 24, '…');
+            }
         }
 
         return $logged;

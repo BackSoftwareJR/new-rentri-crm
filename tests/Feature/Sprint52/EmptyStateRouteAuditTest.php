@@ -53,31 +53,10 @@ class EmptyStateRouteAuditTest extends TestCase
 
     public function test_app_routes_require_auth_except_public_allowlist(): void
     {
-        $allowlist = ['login', 'login.store', 'logout', 'storage.local', 'two-factor.challenge', 'two-factor.challenge.store', 'webhooks.stripe.ecommerce'];
-
         foreach (Route::getRoutes() as $route) {
             $name = $route->getName();
-            if ($name === null || in_array($name, $allowlist, true)) {
-                continue;
-            }
 
-            if (str_starts_with($name, 'livewire.') || str_starts_with($name, 'default-livewire.')) {
-                continue;
-            }
-
-            if (str_starts_with($route->uri(), 'up')) {
-                continue;
-            }
-
-            if (str_starts_with($route->uri(), 'horizon')) {
-                continue;
-            }
-
-            if (str_starts_with($route->uri(), 'storage/')) {
-                continue;
-            }
-
-            if ($route->uri() === '/') {
+            if ($name === null || $this->isPublicRoute($route)) {
                 continue;
             }
 
@@ -89,6 +68,42 @@ class EmptyStateRouteAuditTest extends TestCase
                 "Route [{$name}] ({$route->uri()}) should require auth middleware.",
             );
         }
+    }
+
+    private function isPublicRoute(\Illuminate\Routing\Route $route): bool
+    {
+        $name = $route->getName();
+        $uri = $route->uri();
+
+        if ($uri === '/') {
+            return true;
+        }
+
+        foreach (config('auth_audit.skip_route_name_prefixes', []) as $prefix) {
+            if (str_starts_with((string) $name, $prefix)) {
+                return true;
+            }
+        }
+
+        foreach (config('auth_audit.skip_uri_prefixes', []) as $prefix) {
+            if (str_starts_with($uri, $prefix)) {
+                return true;
+            }
+        }
+
+        if (in_array($name, config('auth_audit.public_route_names', []), true)) {
+            return true;
+        }
+
+        $middleware = collect($route->gatherMiddleware());
+
+        foreach (config('auth_audit.public_middleware', []) as $publicMiddleware) {
+            if ($middleware->contains($publicMiddleware)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function test_livewire_update_route_requires_auth(): void

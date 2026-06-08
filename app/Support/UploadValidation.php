@@ -59,4 +59,32 @@ final class UploadValidation
             'mimetypes:application/pdf,image/jpeg,image/png,image/webp',
         ];
     }
+
+    /**
+     * @return list<string|array<int, string>>
+     */
+    public static function smontaggioPhotoRules(int $maxKb = 2048): array
+    {
+        return [
+            'nullable',
+            'file',
+            'max:'.$maxKb,
+            'mimes:jpg,jpeg,png,webp',
+            'mimetypes:image/jpeg,image/png,image/webp',
+        ];
+    }
+
+    /**
+     * @return list<string|array<int, string>>
+     */
+    public static function csvRules(int $maxKb = 2048): array
+    {
+        return [
+            'required',
+            'file',
+            'max:'.$maxKb,
+            'mimes:csv,txt',
+            'mimetypes:text/csv,text/plain,application/csv,application/vnd.ms-excel',
+        ];
+    }
 }

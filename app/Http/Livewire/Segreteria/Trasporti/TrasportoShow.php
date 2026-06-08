@@ -3,6 +3,7 @@
 namespace App\Http\Livewire\Segreteria\Trasporti;
 
 use App\Domain\Fir\FirBloccoService;
+use App\Domain\Fir\FirPdfGeneratorService;
 use App\Domain\Trasporti\TrasportoGpsTrackingService;
 use App\Domain\Trasporti\TrasportoTrackingPrepService;
 use App\Domain\Trasporti\TrasportoTrackingService;
@@ -75,6 +76,15 @@ class TrasportoShow extends SegreteriaPage
             session()->flash('error', 'Aggiornamento GPS fallito: '.$e->getMessage());
 
             return;
+        }
+
+        $newPosition = $gpsTracking->lastPosition($this->trasporto);
+        if ($newPosition !== null) {
+            $this->dispatch('gps-position-updated',
+                lat: $newPosition['latitude'],
+                lng: $newPosition['longitude'],
+                speedKmh: $newPosition['speed_kmh'],
+            );
         }
 
         session()->flash('success', 'Posizione GPS aggiornata.');
@@ -255,6 +265,21 @@ class TrasportoShow extends SegreteriaPage
         }
 
         return $message;
+    }
+
+    public function downloadFirPdf(FirPdfGeneratorService $pdfGenerator): StreamedResponse
+    {
+        $this->authorize('view', $this->trasporto);
+
+        $fir = $this->trasporto->firCollegato;
+
+        if ($fir === null) {
+            abort(404, 'Nessun FIR vidimato per questo trasporto.');
+        }
+
+        $this->authorize('view', $fir);
+
+        return $pdfGenerator->download($fir);
     }
 
     public function downloadXfirFirmato(RentriFirSigningServiceInterface $firSigning): StreamedResponse

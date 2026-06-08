@@ -49,6 +49,62 @@ class VfuIndex extends SegreteriaPage
         session()->flash('success', 'Registrazione VFU eliminata.');
     }
 
+    public function exportCsv(): StreamedResponse
+    {
+        $this->authorize('viewAny', VfuRegistration::class);
+
+        $registrations = app(VfuAccettazioneService::class)
+            ->query([
+                'search' => $this->search,
+                'stato'  => $this->stato,
+            ])
+            ->with(['smontaggioSessions.operatore:id,name'])
+            ->get();
+
+        $filename = 'vfu-'.now()->format('Y-m-d').'.csv';
+
+        return response()->streamDownload(function () use ($registrations): void {
+            $handle = fopen('php://output', 'w');
+            if ($handle === false) {
+                return;
+            }
+
+            fputcsv($handle, [
+                'targa',
+                'telaio',
+                'marca',
+                'modello',
+                'anno',
+                'stato',
+                'data_accettazione',
+                'codice_cer',
+                'operatore',
+            ], ';');
+
+            foreach ($registrations as $v) {
+                $operatore = $v->smontaggioSessions
+                    ->sortByDesc('started_at')
+                    ->first()
+                    ?->operatore
+                    ?->name;
+
+                fputcsv($handle, [
+                    $v->targa,
+                    $v->telaio,
+                    $v->marca,
+                    $v->modello,
+                    $v->data_consegna?->format('Y') ?? $v->created_at?->format('Y') ?? '',
+                    $v->stato->label(),
+                    $v->data_accettazione?->format('d/m/Y') ?? '',
+                    VfuAccettazioneService::CER_VFU_ACCETTAZIONE,
+                    $operatore ?? '',
+                ], ';');
+            }
+
+            fclose($handle);
+        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
     public function exportStoricoCsv(VfuStoricoExportService $export): StreamedResponse
     {
         $this->authorize('viewAny', VfuRegistration::class);

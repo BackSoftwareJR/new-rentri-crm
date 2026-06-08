@@ -66,4 +66,12 @@ interface RentriApiClientInterface
      * @return array<string, mixed>
      */
     public function replayTransazione(RentriTransazione $transazione): array;
+
+    /**
+     * Lookup an operator on RENTRI by CF or P.IVA.
+     * Returns registration info or a not-found indicator.
+     *
+     * @return array{iscritto: bool, numero_iscrizione: string|null, validita_autorizzazione: string|null, ragione_sociale: string|null, raw: array<string, mixed>}
+     */
+    public function lookupOperatore(string $cfOrPiva): array;
 }

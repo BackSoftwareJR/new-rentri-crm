@@ -12,9 +12,13 @@
             <x-contextual-help title="Pratiche VFU">
                 Elenco pratiche demolizione: accettazione, bonifica e certificato rottamazione.
             </x-contextual-help>
-            <button type="button" class="seg-btn seg-btn-secondary" wire:click="exportStoricoCsv">
-                Export storico CSV
+            <button type="button" class="seg-btn seg-btn-secondary" wire:click="exportCsv">
+                Esporta CSV
             </button>
+            <button type="button" class="seg-btn seg-btn-ghost seg-btn-sm" wire:click="exportStoricoCsv">
+                Storico stati
+            </button>
+            <livewire:segreteria.vfu.vfu-import-csv wire:key="vfu-import-csv" />
             <a href="{{ route('segreteria.vfu.create') }}" class="seg-btn seg-btn-primary" wire:navigate>+ Nuova accettazione</a>
         </div>
     </div>

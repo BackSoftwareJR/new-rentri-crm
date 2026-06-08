@@ -22,14 +22,22 @@ class OperatoreMobileApiService
      */
     public function bonifica(array $filters = []): array
     {
-        $veicoli = $this->bonifica->queryVeicoliDaBonificare($filters)
-            ->get()
+        $perPage = max(1, min(50, (int) ($filters['per_page'] ?? 10)));
+        $paginator = $this->bonifica->queryVeicoliDaBonificare($filters)->paginate($perPage);
+
+        $veicoli = collect($paginator->items())
             ->map(fn (VfuRegistration $vfu) => $this->serializeVeicolo(
                 $this->bonifica->enrichVeicolo($vfu),
             ));
 
         return $this->envelope([
-            'count'   => $veicoli->count(),
+            'count'      => $paginator->total(),
+            'pagination' => [
+                'current_page' => $paginator->currentPage(),
+                'last_page'    => $paginator->lastPage(),
+                'per_page'     => $paginator->perPage(),
+                'total'        => $paginator->total(),
+            ],
             'veicoli' => $veicoli->values()->all(),
         ]);
     }

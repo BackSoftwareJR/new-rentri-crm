@@ -11,6 +11,7 @@
                 ['key' => 'codici-cer', 'label' => 'Codici CER', 'route' => 'segreteria.codici-cer.index', 'path' => '/segreteria/codici-cer', 'tip' => 'Catalogo rifiuti', 'icon' => '<path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h10"/><circle cx="17" cy="17" r="3"/>'],
                 ['key' => 'magazzino', 'label' => 'Magazzino Rifiuti', 'route' => 'segreteria.magazzino', 'path' => '/segreteria/magazzino', 'tip' => 'Giacenze per CER', 'icon' => '<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>'],
                 ['key' => 'registro-movimenti', 'label' => 'Registro movimenti', 'route' => 'segreteria.registro-movimenti', 'path' => '/segreteria/registro-movimenti', 'tip' => 'Carichi e scarichi', 'icon' => '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/>'],
+                ['key' => 'bilancio-cer', 'label' => 'Bilancio CER', 'route' => 'segreteria.report.bilancio-cer', 'path' => '/segreteria/report/bilancio-cer', 'tip' => 'Riepilogo carichi/scarichi per CER', 'icon' => '<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><path d="M2 20h20"/>'],
                 ['key' => 'trasporti', 'label' => 'Trasporti rifiuti', 'route' => 'segreteria.trasporti', 'path' => '/segreteria/trasporti', 'tip' => 'Spedizioni e FIR', 'icon' => '<rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-3"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>'],
             ],
         ],
@@ -19,9 +20,14 @@
             'items' => [
                 ['key' => 'fir', 'label' => 'Formulari (FIR)', 'route' => 'segreteria.fir', 'path' => '/segreteria/fir', 'tip' => 'Blocchi e formulari digitali', 'icon' => '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>'],
                 ['key' => 'rentri', 'label' => 'RENTRI', 'route' => 'segreteria.rentri', 'path' => '/segreteria/rentri', 'tip' => 'Trasmissione registro MASE', 'icon' => '<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>'],
-                ['key' => 'rentri-impostazioni', 'label' => 'Impostazioni RENTRI', 'route' => 'segreteria.impostazioni.rentri', 'path' => '/segreteria/impostazioni/rentri', 'tip' => 'Certificati e sandbox', 'icon' => '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>'],
-                ['key' => 'impostazioni-notifiche', 'label' => 'Notifiche email', 'route' => 'segreteria.impostazioni.notifiche', 'path' => '/segreteria/impostazioni/notifiche', 'tip' => 'Toggle eventi email stub', 'icon' => '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>'],
+                ['key' => 'impostazioni', 'label' => 'Impostazioni', 'route' => 'segreteria.impostazioni', 'path' => '/segreteria/impostazioni', 'tip' => 'Hub impostazioni: azienda, RENTRI, pagamenti, email, integrazioni', 'icon' => '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>'],
                 ['key' => 'impostazioni-sicurezza', 'label' => 'Sicurezza 2FA', 'route' => 'segreteria.impostazioni.sicurezza', 'path' => '/segreteria/impostazioni/sicurezza', 'tip' => 'TOTP opt-in admin/segreteria', 'icon' => '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>'],
+            ],
+        ],
+        [
+            'label' => 'Fatturazione',
+            'items' => [
+                ['key' => 'fatturazione', 'label' => 'Fatture & Preventivi', 'route' => 'segreteria.fatture.index', 'path' => '/segreteria/fatture', 'tip' => 'Fatture, note credito, preventivi', 'icon' => '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>'],
             ],
         ],
         [
@@ -34,6 +40,51 @@
     ];
 
     $demoActive = \App\Support\Demo\DemoContext::isActive();
+
+    // Cert expiry warning: check once per request, caught silently
+    $certWarning = null;
+    try {
+        $rentriSettings = \App\Models\RentriSetting::instance();
+        $certDays  = $rentriSettings->cert_scadenza  !== null ? (int) now()->diffInDays($rentriSettings->cert_scadenza, false)  : null;
+        $firmaDays = $rentriSettings->firma_cert_scadenza !== null ? (int) now()->diffInDays($rentriSettings->firma_cert_scadenza, false) : null;
+
+        if (($certDays !== null && $certDays < 30) || ($firmaDays !== null && $firmaDays < 30)) {
+            $parts = [];
+            if ($certDays !== null && $certDays < 30) {
+                $parts[] = 'mTLS '.($certDays < 0 ? 'SCADUTO' : 'tra '.$certDays.' gg');
+            }
+            if ($firmaDays !== null && $firmaDays < 30) {
+                $parts[] = 'xFIR '.($firmaDays < 0 ? 'SCADUTO' : 'tra '.$firmaDays.' gg');
+            }
+            $certWarning = implode(' · ', $parts);
+        }
+    } catch (\Throwable) {
+        // DB not available during build or unauthenticated request — skip silently
+    }
+
+    $fatturazioneBadge = null;
+    try {
+        $fatturazioneBadge = app(\App\Support\Segreteria\SegreteriaNavBadgeService::class)->fatturazioneBadge();
+    } catch (\Throwable) {
+        // DB not available during build or unauthenticated request — skip silently
+    }
+
+    $adminGroups = [
+        [
+            'label' => 'Admin',
+            'items' => [
+                ['key' => 'utenti',       'label' => 'Utenti',         'route' => 'admin.users',        'path' => '/admin/utenti',      'tip' => 'Gestione accessi CRM',   'icon' => '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'],
+                ['key' => 'cestino',      'label' => 'Cestino',        'route' => 'admin.trash',        'path' => '/admin/cestino',     'tip' => 'Record eliminati (soft-delete)', 'icon' => '<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>'],
+                ['key' => 'siti',         'label' => 'Impianti',       'route' => 'admin.siti',         'path' => '/admin/siti',        'tip' => 'Multi-impianto RENTRI',  'icon' => '<path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z"/><path d="M3 9V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4"/><path d="M12 12v4"/><path d="M8 12h8"/>'],
+                ['key' => 'audit',        'label' => 'Audit log',      'route' => 'admin.audit',        'path' => '/admin/audit',       'tip' => 'Activity log centralizzato', 'icon' => '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>'],
+                ['key' => 'logs',         'label' => 'Log applicativi','route' => 'admin.logs',         'path' => '/admin/logs',        'tip' => 'Log strutturati Laravel',   'icon' => '<rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="3"/>'],
+                ['key' => 'waf-status',   'label' => 'WAF status',     'route' => 'admin.waf-status',   'path' => '/admin/waf-status',  'tip' => 'Stato Web Application Firewall', 'icon' => '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>'],
+                ['key' => 'ha-status',    'label' => 'HA status',      'route' => 'admin.ha-status',    'path' => '/admin/ha-status',   'tip' => 'High availability cluster', 'icon' => '<rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/>'],
+                ['key' => 'pen-test-prep','label' => 'Pen test',       'route' => 'admin.pen-test-prep','path' => '/admin/pen-test-prep','tip' => 'Preparazione pen test',      'icon' => '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>'],
+                ['key' => 'rentri-status','label' => 'Stato RENTRI',   'route' => 'admin.rentri-status','path' => '/admin/rentri-status','tip' => 'API mode, cert, health check','icon' => '<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>'],
+            ],
+        ],
+    ];
 @endphp
 
 <aside class="seg-sidebar" id="seg-sidebar" aria-label="Menu" data-seg-tablet-sidebar="true">
@@ -52,6 +103,16 @@
         </div>
     @endif
 
+    @if ($certWarning)
+        <div style="margin: 8px 12px 0; background: #fef9c3; border: 1px solid #fde047; border-radius: 6px; padding: 7px 10px; font-size: 11px; color: #92400e; line-height: 1.4;">
+            <span aria-hidden="true">⚠️</span>
+            <strong>Cert RENTRI</strong><br>
+            {{ $certWarning }}<br>
+            <a href="{{ Route::has('segreteria.impostazioni') ? route('segreteria.impostazioni', ['tab' => 'rentri']) : (Route::has('segreteria.impostazioni.rentri') ? route('segreteria.impostazioni.rentri') : '#') }}"
+               style="color: #92400e; text-decoration: underline; font-size: 10px;">Rinnovare →</a>
+        </div>
+    @endif
+
     <nav class="seg-sidebar-nav">
         @foreach ($groups as $group)
             <div class="seg-sidebar-group">
@@ -64,16 +125,41 @@
                     <a href="{{ $href }}" @class(['active' => $isActive]) title="{{ $item['tip'] }}" @if($isActive) aria-current="page" @endif @if($item['key'] === 'rentri') data-tour="rentri-nav" @endif>
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{!! $item['icon'] !!}</svg>
                         <span>{{ $item['label'] }}</span>
+                        @if ($item['key'] === 'fatturazione' && $fatturazioneBadge)
+                            <span class="seg-badge {{ $fatturazioneBadge['color'] === 'red' ? 'seg-badge-danger' : 'seg-badge-warning' }}"
+                                  style="margin-left: auto; font-size: 10px; min-width: 18px; text-align: center;"
+                                  title="{{ $fatturazioneBadge['color'] === 'red' ? 'Fatture scadute' : 'Fatture in scadenza (7 gg)' }}">
+                                {{ $fatturazioneBadge['count'] }}
+                            </span>
+                        @endif
                     </a>
                 @endforeach
             </div>
         @endforeach
+
+        @if (auth()->check() && auth()->user()->hasRole('admin'))
+            @foreach ($adminGroups as $group)
+                <div class="seg-sidebar-group">
+                    <span class="seg-sidebar-group-label">{{ $group['label'] }}</span>
+                    @foreach ($group['items'] as $item)
+                        @php
+                            $href = Route::has($item['route']) ? route($item['route']) : url($item['path']);
+                            $isActive = $active === $item['key'];
+                        @endphp
+                        <a href="{{ $href }}" @class(['active' => $isActive]) title="{{ $item['tip'] }}" @if($isActive) aria-current="page" @endif>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{!! $item['icon'] !!}</svg>
+                            <span>{{ $item['label'] }}</span>
+                        </a>
+                    @endforeach
+                </div>
+            @endforeach
+        @endif
     </nav>
 
     <div class="seg-sidebar-footer">
         @livewire(\App\Http\Livewire\Segreteria\DemoModeToggle::class)
         <p class="seg-footer-text">Segreteria</p>
-        <p class="seg-footer-text">Versione 1.0</p>
+        <p class="seg-footer-text">v{{ config('app_version.version') }}</p>
     </div>
 
     <div style="padding: 0 16px 16px;">

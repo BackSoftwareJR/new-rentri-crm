@@ -29,7 +29,7 @@ class EcommerceOrdineShow extends SegreteriaPage
     public function mount(EcommerceOrdine $ordine): void
     {
         $this->authorize('view', $ordine);
-        $this->ordine = $ordine->load('user:id,name');
+        $this->ordine = $ordine->load(['user:id,name,email', 'fattura:id,ecommerce_ordine_id,numero_fattura,stato']);
     }
 
     public function avviaCheckout(EcommerceCheckoutService $checkout): void
@@ -38,7 +38,7 @@ class EcommerceOrdineShow extends SegreteriaPage
 
         $this->validate([
             'pagamentoMetodo' => ['required', 'in:bonifico,contanti,pos_stub,stripe'],
-            'noteCheckout'    => ['nullable', 'string', 'max:500'],
+            'noteCheckout' => ['nullable', 'string', 'max:500'],
         ]);
 
         try {
@@ -87,7 +87,7 @@ class EcommerceOrdineShow extends SegreteriaPage
         }
 
         $this->checkoutToken = '';
-        session()->flash('success', 'Pagamento confermato (stub sicuro) — ordine completato.');
+        session()->flash('success', 'Pagamento confermato — ordine completato.');
     }
 
     public function annullaOrdine(EcommerceCheckoutService $checkout): void
@@ -112,12 +112,12 @@ class EcommerceOrdineShow extends SegreteriaPage
         return $this->segreteriaView(
             'livewire.segreteria.ecommerce.ordine-show',
             [
-                'service'              => $ecommerce,
-                'stati'                => OrdineEcommerceStato::cases(),
-                'paymentRuntime'       => $paymentRuntime,
-                'paymentPreflight'     => $paymentRuntime->preflightChecklist(),
-                'paymentPreflightOk'   => $paymentRuntime->preflightReady(),
-                'stripeDashboardUrl'   => $paymentRuntime->stripeDashboardUrl(),
+                'service' => $ecommerce,
+                'stati' => OrdineEcommerceStato::cases(),
+                'paymentRuntime' => $paymentRuntime,
+                'paymentPreflight' => $paymentRuntime->preflightChecklist(),
+                'paymentPreflightOk' => $paymentRuntime->preflightReady(),
+                'stripeDashboardUrl' => $paymentRuntime->stripeDashboardUrl(),
             ],
             'ecommerce',
             'Ordine #'.$this->ordine->id,

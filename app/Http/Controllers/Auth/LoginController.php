@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Domain\Audit\ActivityLogService;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -10,6 +11,10 @@ use Illuminate\View\View;
 
 class LoginController extends Controller
 {
+    public function __construct(
+        private readonly ActivityLogService $audit,
+    ) {}
+
     public function create(): View|RedirectResponse
     {
         if (Auth::check()) {
@@ -34,6 +39,18 @@ class LoginController extends Controller
 
         $user = $request->user();
 
+        if (! $user->active) {
+            Auth::logout();
+
+            $message = $user->deletion_requested_at
+                ? 'Account disattivato: richiesta di cancellazione in corso.'
+                : 'Account disattivato. Contatta l\'amministratore.';
+
+            return back()
+                ->withErrors(['email' => $message])
+                ->onlyInput('email');
+        }
+
         if ($user->hasTwoFactorEnabled()) {
             Auth::logout();
 
@@ -45,11 +62,31 @@ class LoginController extends Controller
 
         $request->session()->regenerate();
 
+        $this->audit->record(
+            'auth',
+            'Accesso effettuato',
+            $user,
+            ['method' => 'password', 'remember' => $request->boolean('remember')],
+            $user->id,
+        );
+
         return redirect()->intended($this->homeForUser($user));
     }
 
     public function destroy(Request $request): RedirectResponse
     {
+        $user = $request->user();
+
+        if ($user) {
+            $this->audit->record(
+                'auth',
+                'Disconnessione effettuata',
+                $user,
+                [],
+                $user->id,
+            );
+        }
+
         Auth::logout();
 
         $request->session()->invalidate();

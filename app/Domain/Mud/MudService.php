@@ -95,29 +95,48 @@ class MudService
     public function buildExportPayload(MudDichiarazione $dichiarazione): array
     {
         $righe = $dichiarazione->righe ?? [];
+        $isSimulazione = (bool) config('services.mud_telematico.stub', true);
+
+        $righeConDettagli = array_map(static function (array $riga): array {
+            return [
+                'codice_cer_id'         => $riga['codice_cer_id'] ?? null,
+                'codice_cer'            => $riga['codice'] ?? '',
+                'descrizione'           => $riga['descrizione'] ?? '',
+                'quantita_kg'           => $riga['carichi_kg'] ?? 0,
+                'unita_misura'          => 'kg',
+                'operazione_carico'     => 'R13',
+                'operazione_scarico'    => 'R13',
+                'impianto_provenienza'  => '',
+                'impianto_destinazione' => '',
+                'carichi_kg'            => $riga['carichi_kg'] ?? 0,
+                'scarichi_kg'           => $riga['scarichi_kg'] ?? 0,
+                'saldo_kg'              => $riga['saldo_kg'] ?? 0,
+            ];
+        }, $righe);
 
         return [
-            'formato'          => 'mud-json-stub-v1',
+            'formato'          => 'mud-json-v1',
             'xml_schema'       => MudXmlValidationService::SCHEMA_VERSION,
             'anno_riferimento' => $dichiarazione->anno_riferimento,
             'generato_il'      => now()->toIso8601String(),
+            'simulazione'      => $isSimulazione,
             'operatore'        => [
-                'stub' => true,
+                'ragione_sociale' => (string) config('app.name', ''),
+                'unita_operativa' => (string) config('services.mud_telematico.unita_operativa', ''),
             ],
-            'righe'            => $righe,
+            'righe'            => $righeConDettagli,
             'totali'           => [
                 'carichi_kg'  => round(collect($righe)->sum('carichi_kg'), 4),
                 'scarichi_kg' => round(collect($righe)->sum('scarichi_kg'), 4),
                 'saldo_kg'    => round(collect($righe)->sum('saldo_kg'), 4),
                 'codici_cer'  => count($righe),
             ],
-            'note'             => 'Export stub — invio telematico via MudInvioTelematicoService (protocollo simulato).',
         ];
     }
 
     public function exportFilename(MudDichiarazione $dichiarazione): string
     {
-        return sprintf('mud-%d-stub.json', $dichiarazione->anno_riferimento);
+        return sprintf('mud-%d.json', $dichiarazione->anno_riferimento);
     }
 
     public function statoBadgeVariant(MudStato $stato): string

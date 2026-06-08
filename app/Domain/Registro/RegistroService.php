@@ -92,6 +92,7 @@ class RegistroService
     public function cronologiaPerCer(int $codiceCerId, int $limit = 50)
     {
         return RegistroMovimento::query()
+            ->forActiveSito()
             ->where('codice_cer_id', $codiceCerId)
             ->with('codiceCer:id,codice,descrizione,um')
             ->orderByDesc('data_movimento')
@@ -114,6 +115,7 @@ class RegistroService
     private function query(array $filters): Builder
     {
         $query = RegistroMovimento::query()
+            ->forActiveSito()
             ->with('codiceCer:id,codice,descrizione,um,categoria');
 
         if (! empty($filters['codice_cer_id'])) {

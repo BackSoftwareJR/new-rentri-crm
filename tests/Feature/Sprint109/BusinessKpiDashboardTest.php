@@ -3,11 +3,15 @@
 namespace Tests\Feature\Sprint109;
 
 use App\Domain\Dashboard\BusinessKpiDashboardService;
+use App\Enums\FirStato;
 use App\Enums\OrdineEcommerceStato;
 use App\Enums\RegistroMovimentoTipo;
+use App\Enums\TrasportoStato;
 use App\Http\Livewire\Segreteria\Dashboard;
+use App\Models\Anagrafica;
 use App\Models\CodiceCer;
 use App\Models\EcommerceOrdine;
+use App\Models\Fattura;
 use App\Models\MagazzinoCaricoManuale;
 use App\Models\RegistroMovimento;
 use App\Models\User;
@@ -17,6 +21,32 @@ use Tests\TestCase;
 
 class BusinessKpiDashboardTest extends TestCase
 {
+    public function test_metrics_count_paid_invoices_for_revenue(): void
+    {
+        $service = app(BusinessKpiDashboardService::class);
+        [$from, $to] = $service->resolvePeriod('last_7_days');
+        $anagrafica = Anagrafica::factory()->create();
+
+        $fattura = Fattura::create([
+            'numero_fattura'  => 'FT-KPI-001',
+            'tipo'            => 'fattura',
+            'anagrafica_id'   => $anagrafica->id,
+            'data_emissione'  => now()->toDateString(),
+            'data_pagamento'  => now()->toDateString(),
+            'stato'           => 'pagata',
+            'imponibile'      => 100,
+            'iva_percentuale' => 22,
+            'iva_importo'     => 22,
+            'totale'          => 150.75,
+        ]);
+
+        $this->assertDatabaseHas('fatture', ['id' => $fattura->id, 'stato' => 'pagata']);
+
+        $metrics = $service->metricsForRange($from, $to);
+
+        $this->assertGreaterThanOrEqual(150.75, $metrics['ecommerce']['revenue_eur']);
+    }
+
     public function test_metrics_count_confirmed_orders_in_window(): void
     {
         $user = User::where('email', 'segreteria@example.com')->firstOrFail();
@@ -41,7 +71,6 @@ class BusinessKpiDashboardTest extends TestCase
         $metrics = $service->metricsForRange($from, $to);
 
         $this->assertGreaterThanOrEqual(1, $metrics['ecommerce']['ordini_confermati']);
-        $this->assertGreaterThanOrEqual(120.50, $metrics['ecommerce']['revenue_eur']);
     }
 
     public function test_metrics_count_vfu_accettate_by_data_accettazione(): void
@@ -136,8 +165,8 @@ class BusinessKpiDashboardTest extends TestCase
             ->assertSee('Ordini e-commerce confermati')
             ->assertSee('VFU accettate')
             ->assertSee('Movimenti magazzino (kg)')
-            ->assertSee('Revenue (stub ordini)')
-            ->assertSeeHtml('href="'.route('segreteria.ecommerce').'"')
+            ->assertSee('Revenue fatture pagate')
+            ->assertSeeHtml('href="'.route('segreteria.fatture.index').'"')
             ->assertSeeHtml('href="'.route('segreteria.vfu.index').'"')
             ->assertSeeHtml('href="'.route('segreteria.registro-movimenti').'"');
     }

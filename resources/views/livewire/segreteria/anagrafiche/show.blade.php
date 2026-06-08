@@ -65,6 +65,42 @@
                 @endif
                 <dt>Note</dt><dd>{{ $anagrafica->note ?: '—' }}</dd>
             </dl>
+
+            @if ($this->canVerificaRentri())
+                <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--seg-border, #e5e7eb);">
+                    <h3 class="seg-section-title" style="font-size: 0.9rem; margin-bottom: 0.5rem;">Verifica RENTRI</h3>
+
+                    @if ($anagrafica->rentri_verificato_at)
+                        <p style="font-size: 0.85rem; margin: 0 0 0.5rem;">
+                            @if ($anagrafica->rentri_verificato_esito === 'iscritto')
+                                <span class="seg-badge seg-badge-success">✅ Iscritto RENTRI</span>
+                                @if ($anagrafica->rentri_iscrizione_numero)
+                                    <span class="seg-text-muted">N. aut. {{ $anagrafica->rentri_iscrizione_numero }}</span>
+                                @endif
+                            @else
+                                <span class="seg-badge seg-badge-warning">⚠️ Non trovato su RENTRI</span>
+                            @endif
+                            <span class="seg-text-muted" style="font-size: 0.75rem; margin-left: 0.5rem;">
+                                Verificato {{ $anagrafica->rentri_verificato_at->diffForHumans() }}
+                            </span>
+                        </p>
+                    @endif
+
+                    @if ($rentriVerificaResult && isset($rentriVerificaResult['error']))
+                        <p class="seg-field-error">{{ $rentriVerificaResult['error'] }}</p>
+                    @endif
+
+                    <button type="button" class="seg-btn seg-btn-secondary seg-btn-sm"
+                        wire:click="verificaRentri"
+                        wire:loading.attr="disabled"
+                        wire:target="verificaRentri">
+                        <span wire:loading.remove wire:target="verificaRentri">
+                            {{ $anagrafica->rentri_verificato_at ? 'Ri-verifica su RENTRI' : 'Verifica su RENTRI' }}
+                        </span>
+                        <span wire:loading wire:target="verificaRentri">Verifica in corso…</span>
+                    </button>
+                </div>
+            @endif
         </div>
 
         <div class="seg-card seg-card-padding">
@@ -106,4 +142,6 @@
             @endif
         </div>
     </div>
+
+    <livewire:timeline-widget :subject="$anagrafica" title="Storico anagrafica" wire:key="timeline-anagrafica-{{ $anagrafica->id }}" />
 </div>

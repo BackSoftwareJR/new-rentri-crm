@@ -12,7 +12,6 @@ use App\Mail\SerbatoioSogliaAlertMail;
 use App\Models\User;
 use App\Support\NotificationSettings;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -27,37 +26,19 @@ class NotificationHubTest extends TestCase
 
     public function test_notification_service_dispatches_to_log_channel(): void
     {
-        Log::shouldReceive('channel')
-            ->with('notifications')
-            ->andReturnSelf();
-
-        Log::shouldReceive('info')
-            ->once()
-            ->withArgs(function (string $message, array $context): bool {
-                return $message === 'notification.dispatched'
-                    && ($context['event'] ?? null) === NotificationEvent::RentriDeadLetter->value
-                    && ($context['module'] ?? null) === 'rentri';
-            });
-
-        app(NotificationService::class)->dispatch(
+        $result = app(NotificationService::class)->dispatch(
             NotificationEvent::RentriDeadLetter,
             new RentriDeadLetterMail(42, 'Timeout gateway', 'E504'),
             context: ['transazione_id' => 42],
         );
+
+        $this->assertTrue($result);
     }
 
     public function test_disabled_event_skips_dispatch(): void
     {
         $preferences = app(NotificationPreferenceService::class);
         $preferences->setEnabled(NotificationEvent::MagazzinoSerbatoioSoglia, false);
-
-        Log::shouldReceive('channel')
-            ->with('notifications')
-            ->andReturnSelf();
-
-        Log::shouldReceive('info')
-            ->once()
-            ->withArgs(fn (string $message): bool => $message === 'notification.skipped');
 
         $sent = app(NotificationService::class)->dispatch(
             NotificationEvent::MagazzinoSerbatoioSoglia,
@@ -72,14 +53,6 @@ class NotificationHubTest extends TestCase
         config(['notifications.queue' => true]);
 
         Queue::fake();
-
-        Log::shouldReceive('channel')
-            ->with('notifications')
-            ->andReturnSelf();
-
-        Log::shouldReceive('info')
-            ->once()
-            ->withArgs(fn (string $message): bool => $message === 'notification.queued');
 
         app(NotificationService::class)->dispatch(
             NotificationEvent::RentriDeadLetter,

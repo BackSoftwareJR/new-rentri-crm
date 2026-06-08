@@ -72,7 +72,7 @@
 
         <div class="seg-card seg-card-padding" style="margin-top: 1rem;">
             <p class="seg-cell-strong" style="font-size: 1.1rem;">Totale: {{ number_format($totale, 2, ',', '.') }} €</p>
-            <button type="button" class="seg-btn seg-btn-primary" wire:click="creaOrdineBozza" wire:confirm="Creare ordine bozza? La giacenza verrà scalata (stub)." wire:loading.attr="disabled">
+            <button type="button" class="seg-btn seg-btn-primary" wire:click="creaOrdineBozza" wire:confirm="Creare ordine bozza? La giacenza verrà scalata." wire:loading.attr="disabled">
                 Crea ordine bozza
             </button>
         </div>

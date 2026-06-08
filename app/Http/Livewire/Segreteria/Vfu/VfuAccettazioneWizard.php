@@ -58,6 +58,28 @@ class VfuAccettazioneWizard extends SegreteriaPage
 
     public string $luogo_nascita = '';
 
+    public string $email_proprietario = '';
+
+    public string $pec_proprietario = '';
+
+    public string $data_nascita = '';
+
+    public string $nazionalita_proprietario = 'Italiana';
+
+    public string $provincia_nascita = '';
+
+    public string $tipo_documento_identita = '';
+
+    public string $numero_documento_identita = '';
+
+    public string $note_carrozzeria = '';
+
+    public string $provenienza_veicolo = '';
+
+    public bool $targa_estera = false;
+
+    public string $targa_estera_valore = '';
+
     public $certificatoPdf;
 
     public $documentoIdentita;
@@ -95,6 +117,18 @@ class VfuAccettazioneWizard extends SegreteriaPage
                 'telaio' => ['required', 'string', 'max:50'],
                 'codice_motore' => ['required', 'string', 'max:80'],
                 'peso_kg' => ['required', 'numeric', 'min:1'],
+                'email_proprietario' => ['nullable', 'email', 'max:255'],
+                'pec_proprietario' => ['nullable', 'email', 'max:255'],
+                'data_nascita' => ['nullable', 'date'],
+                'luogo_nascita' => ['nullable', 'string', 'max:100'],
+                'provincia_nascita' => ['nullable', 'string', 'size:2'],
+                'nazionalita_proprietario' => ['required', 'string', 'max:80'],
+                'tipo_documento_identita' => ['nullable', 'in:CI,passaporto,patente'],
+                'numero_documento_identita' => ['nullable', 'string', 'max:50'],
+                'note_carrozzeria' => ['nullable', 'string', 'max:2000'],
+                'provenienza_veicolo' => ['nullable', 'in:privato,assicurazione,officina,altro'],
+                'targa_estera' => ['boolean'],
+                'targa_estera_valore' => ['required_if:targa_estera,true', 'nullable', 'string', 'max:20'],
             ]);
             $this->persistDraft();
         }
@@ -108,6 +142,33 @@ class VfuAccettazioneWizard extends SegreteriaPage
     {
         if ($this->step > 1) {
             $this->step--;
+        }
+    }
+
+    public function fillFromScan(string $value, ?string $target = null): void
+    {
+        $value = strtoupper(trim($value));
+
+        if ($value === '') {
+            return;
+        }
+
+        if ($target === 'targa') {
+            $this->targa = preg_replace('/\s+/', '', $value) ?? $value;
+
+            return;
+        }
+
+        if ($target === 'telaio') {
+            $this->telaio = preg_replace('/\s+/', '', $value) ?? $value;
+
+            return;
+        }
+
+        if (strlen($value) === 17 && preg_match('/^[A-HJ-NPR-Z0-9]{17}$/', $value)) {
+            $this->telaio = $value;
+        } else {
+            $this->targa = preg_replace('/\s+/', '', $value) ?? $value;
         }
     }
 
@@ -154,7 +215,7 @@ class VfuAccettazioneWizard extends SegreteriaPage
         }
 
         $this->validate([
-            $property => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
+            $property => UploadValidation::vfuAllegatoRules(),
         ]);
 
         $this->persistDraft($service);
@@ -219,6 +280,17 @@ class VfuAccettazioneWizard extends SegreteriaPage
             'comune' => $this->comune,
             'provincia' => $this->provincia,
             'luogo_nascita' => $this->luogo_nascita,
+            'email_proprietario' => $this->email_proprietario,
+            'pec_proprietario' => $this->pec_proprietario,
+            'data_nascita' => $this->data_nascita ?: null,
+            'nazionalita_proprietario' => $this->nazionalita_proprietario,
+            'provincia_nascita' => $this->provincia_nascita,
+            'tipo_documento_identita' => $this->tipo_documento_identita ?: null,
+            'numero_documento_identita' => $this->numero_documento_identita ?: null,
+            'note_carrozzeria' => $this->note_carrozzeria ?: null,
+            'provenienza_veicolo' => $this->provenienza_veicolo ?: null,
+            'targa_estera' => $this->targa_estera,
+            'targa_estera_valore' => $this->targa_estera ? $this->targa_estera_valore : null,
         ];
     }
 
@@ -240,6 +312,17 @@ class VfuAccettazioneWizard extends SegreteriaPage
         $this->comune = $vfu->comune ?? '';
         $this->provincia = $vfu->provincia ?? '';
         $this->luogo_nascita = $vfu->luogo_nascita ?? '';
+        $this->email_proprietario = $vfu->email_proprietario ?? '';
+        $this->pec_proprietario = $vfu->pec_proprietario ?? '';
+        $this->data_nascita = $vfu->data_nascita?->toDateString() ?? '';
+        $this->nazionalita_proprietario = $vfu->nazionalita_proprietario ?? 'Italiana';
+        $this->provincia_nascita = $vfu->provincia_nascita ?? '';
+        $this->tipo_documento_identita = $vfu->tipo_documento_identita ?? '';
+        $this->numero_documento_identita = $vfu->numero_documento_identita ?? '';
+        $this->note_carrozzeria = $vfu->note_carrozzeria ?? '';
+        $this->provenienza_veicolo = $vfu->provenienza_veicolo ?? '';
+        $this->targa_estera = (bool) $vfu->targa_estera;
+        $this->targa_estera_valore = $vfu->targa_estera_valore ?? '';
     }
 
     /** @param array<string, string> $data */

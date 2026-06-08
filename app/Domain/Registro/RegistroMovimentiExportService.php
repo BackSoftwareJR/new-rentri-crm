@@ -3,6 +3,8 @@
 namespace App\Domain\Registro;
 
 use App\Models\RegistroMovimento;
+use App\Models\Trasporto;
+use App\Models\VfuRegistration;
 use Illuminate\Database\Eloquent\Builder;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -31,7 +33,7 @@ class RegistroMovimentiExportService
      */
     public function rowFor(RegistroMovimento $movimento): array
     {
-        $movimento->loadMissing('codiceCer:id,codice,descrizione,um');
+        $movimento->loadMissing(['codiceCer:id,codice,descrizione,um', 'source']);
 
         return [
             'id'               => (string) $movimento->id,
@@ -42,8 +44,27 @@ class RegistroMovimentiExportService
             'peso_kg'          => (string) $movimento->peso_kg,
             'note'             => (string) ($movimento->note ?? ''),
             'rentri_trasmesso' => $movimento->rentri_trasmesso ? '1' : '0',
-            'source_type'      => (string) ($movimento->source_type ?? ''),
+            'provenienza'      => $this->provenienzaLabel($movimento),
         ];
+    }
+
+    public function provenienzaLabel(RegistroMovimento $movimento): string
+    {
+        if ($movimento->source_type === null) {
+            return 'Manuale';
+        }
+
+        $source = $movimento->source;
+
+        return match ($movimento->source_type) {
+            RegistroMovimento::SOURCE_VFU_REGISTRATION => $source instanceof VfuRegistration
+                ? sprintf('VFU #%d - %s', $source->id, $source->targa)
+                : 'Manuale',
+            RegistroMovimento::SOURCE_TRASPORTO => $source instanceof Trasporto
+                ? sprintf('Trasporto #%d', $source->id)
+                : 'Trasporto',
+            default => 'Manuale',
+        };
     }
 
     /**
@@ -66,10 +87,11 @@ class RegistroMovimentiExportService
                 'peso_kg',
                 'note',
                 'rentri_trasmesso',
-                'source_type',
+                'provenienza',
             ], ';');
 
             $this->filteredQuery($filters)
+                ->with('source')
                 ->chunkById(200, function ($movimenti) use ($out): void {
                     foreach ($movimenti as $movimento) {
                         fputcsv($out, array_values($this->rowFor($movimento)), ';');

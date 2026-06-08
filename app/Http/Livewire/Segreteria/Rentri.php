@@ -132,6 +132,10 @@ class Rentri extends SegreteriaPage
         $settings = RentriSetting::instance();
         $checklist = $payload ? $conformitaValidator->checklist($payload, $settings) : [];
         $conforme = $payload ? $conformitaValidator->isConforme($payload, $settings) : false;
+        $movimentoErrorSummary = $payload
+            ? $conformitaValidator->payloadMovimentoErrorSummary($payload->movimenti)
+            : ['count' => 0, 'by_id' => []];
+        $movimentoErrorCount = $movimentoErrorSummary['count'];
 
         $storico = RentriTransmissione::query()
             ->withCount('movimenti')
@@ -146,6 +150,7 @@ class Rentri extends SegreteriaPage
                 'payload'    => $payload,
                 'checklist'  => $checklist,
                 'conforme'   => $conforme,
+                'movimentoErrorCount' => $movimentoErrorCount,
                 'storico'    => $storico,
                 'showRentriProdStubBanner' => $prodReadiness->shouldShowProdStubBanner(),
                 'productionSwitchSummary'  => $productionSwitch->summary($settings),

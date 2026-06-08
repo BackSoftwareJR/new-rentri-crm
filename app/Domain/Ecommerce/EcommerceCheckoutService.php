@@ -18,8 +18,13 @@ class EcommerceCheckoutService
     /**
      * @param  non-empty-string  $pagamentoMetodo
      */
-    public function avviaCheckout(EcommerceOrdine $ordine, string $pagamentoMetodo, ?string $note = null): EcommerceOrdine
-    {
+    public function avviaCheckout(
+        EcommerceOrdine $ordine,
+        string $pagamentoMetodo,
+        ?string $note = null,
+        ?string $successUrl = null,
+        ?string $cancelUrl = null,
+    ): EcommerceOrdine {
         if ($ordine->stato !== OrdineEcommerceStato::Bozza) {
             throw new \InvalidArgumentException('Solo ordini in bozza possono avviare il checkout.');
         }
@@ -33,10 +38,10 @@ class EcommerceCheckoutService
         $ordine->update([
             'stato'            => OrdineEcommerceStato::PagamentoInAttesa,
             'pagamento_metodo' => $pagamentoMetodo,
-            'note_checkout'    => $note,
+            'note_checkout'    => $note ?? $ordine->note_checkout,
         ]);
 
-        $this->gateway->initiatePayment($ordine->fresh(), $pagamentoMetodo);
+        $this->gateway->initiatePayment($ordine->fresh(), $pagamentoMetodo, $successUrl, $cancelUrl);
 
         return $ordine->fresh();
     }

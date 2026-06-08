@@ -20,8 +20,17 @@ class PreflightService
      */
     public function run(?string $manifestPath = null): array
     {
+        // App key must be present first — subsequent checks (session, encryption) depend on it.
+        $appKeyCheck = $this->checkAppKey();
+        if ($appKeyCheck['status'] === 'fail') {
+            return [
+                'passed' => false,
+                'checks' => [$appKeyCheck],
+            ];
+        }
+
         $checks = [
-            $this->checkAppKey(),
+            $appKeyCheck,
             $this->checkProductionDebug(),
             $this->checkDatabase(),
             $this->checkViteManifest($manifestPath ?? public_path('build/manifest.json')),

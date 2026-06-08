@@ -11,16 +11,23 @@ class SerbatoioAlertService
     ) {}
 
     /**
-     * @return array{in_attenzione: int, soglia_superata: int, totale_alert: int}
+     * @return array{
+     *   in_attenzione: int,
+     *   soglia_superata: int,
+     *   sotto_soglia_minima: int,
+     *   totale_alert: int
+     * }
      */
     public function summary(): array
     {
         $rows = $this->alertRows();
+        $sottoMinimo = $this->giacenzeSottoMinimo();
 
         return [
-            'in_attenzione'   => $rows->where('stato', 'attenzione')->count(),
-            'soglia_superata' => $rows->where('stato', 'superata')->count(),
-            'totale_alert'    => $rows->count(),
+            'in_attenzione'       => $rows->where('stato', 'attenzione')->count(),
+            'soglia_superata'     => $rows->where('stato', 'superata')->count(),
+            'sotto_soglia_minima' => $sottoMinimo->count(),
+            'totale_alert'        => $rows->count() + $sottoMinimo->count(),
         ];
     }
 
@@ -52,6 +59,22 @@ class SerbatoioAlertService
     {
         $row = $this->magazzino->getSerbatoioDetail($codiceCerId);
 
-        return in_array($row['stato'], ['attenzione', 'superata'], true) ? $row : null;
+        if (in_array($row['stato'], ['attenzione', 'superata'], true)) {
+            return $row;
+        }
+
+        return ($row['sotto_soglia_minima'] ?? false) ? $row : null;
+    }
+
+    /**
+     * Serbatoi con giacenza sotto la soglia minima configurata.
+     *
+     * @return Collection<int, array<string, mixed>>
+     */
+    public function giacenzeSottoMinimo(): Collection
+    {
+        return $this->magazzino->listSerbatoi()
+            ->filter(fn (array $row): bool => (bool) ($row['sotto_soglia_minima'] ?? false))
+            ->values();
     }
 }

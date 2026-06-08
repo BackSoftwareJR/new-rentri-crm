@@ -44,6 +44,11 @@ class VfuRegistrationPolicy
         return $this->demoScopeAllows($vfuRegistration);
     }
 
+    public function restore(User $user, VfuRegistration $vfuRegistration): bool
+    {
+        return $user->hasRole('admin');
+    }
+
     public function downloadCertificato(User $user, VfuRegistration $vfuRegistration): bool
     {
         return $this->demoScopeAllows($vfuRegistration);
@@ -51,6 +56,15 @@ class VfuRegistrationPolicy
 
     public function exportStorico(User $user, VfuRegistration $vfuRegistration): bool
     {
+        return $this->demoScopeAllows($vfuRegistration);
+    }
+
+    public function rottama(User $user, VfuRegistration $vfuRegistration): bool
+    {
+        if (! $user->hasRole(['admin', 'segreteria'])) {
+            return false;
+        }
+
         return $this->demoScopeAllows($vfuRegistration);
     }
 }

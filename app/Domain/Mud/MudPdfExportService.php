@@ -16,7 +16,7 @@ class MudPdfExportService
         $totali = $payload['totali'] ?? [];
 
         $lines = [
-            'Dichiarazione MUD (stub PDF — non ufficiale)',
+            'Dichiarazione MUD — Modello Unico di Dichiarazione',
             'Anno riferimento: '.$dichiarazione->anno_riferimento,
             'Stato: '.$dichiarazione->stato->value,
             'Generato il: '.now()->format('d/m/Y H:i'),
@@ -45,7 +45,7 @@ class MudPdfExportService
 
     public function filename(MudDichiarazione $dichiarazione): string
     {
-        return sprintf('mud-%d-stub.pdf', $dichiarazione->anno_riferimento);
+        return sprintf('mud-%d.pdf', $dichiarazione->anno_riferimento);
     }
 
     public function downloadResponse(MudDichiarazione $dichiarazione, MudService $mud): StreamedResponse

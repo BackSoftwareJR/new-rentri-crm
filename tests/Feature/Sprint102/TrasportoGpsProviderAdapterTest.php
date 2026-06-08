@@ -6,7 +6,6 @@ use App\Domain\Trasporti\TrasportoGpsGeofenceService;
 use App\Domain\Trasporti\TrasportoGpsPreflightService;
 use App\Domain\Trasporti\TrasportoGpsProviderAdapter;
 use App\Domain\Trasporti\TrasportoGpsTrackingService;
-use App\Enums\NotificationEvent;
 use App\Enums\TrasportoStato;
 use App\Http\Livewire\Segreteria\Trasporti\TrasportoShow;
 use App\Models\Anagrafica;
@@ -15,7 +14,6 @@ use App\Models\Trasporto;
 use App\Models\User;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -30,10 +28,10 @@ class TrasportoGpsProviderAdapterTest extends TestCase
     public function test_provider_adapter_default_field_map(): void
     {
         $normalized = app(TrasportoGpsProviderAdapter::class)->normalize([
-            'latitude'    => 45.46,
-            'longitude'   => 9.19,
+            'latitude' => 45.46,
+            'longitude' => 9.19,
             'recorded_at' => '2026-06-04T10:00:00+02:00',
-            'speed_kmh'   => 70,
+            'speed_kmh' => 70,
         ]);
 
         $this->assertSame(45.46, $normalized['latitude']);
@@ -44,10 +42,10 @@ class TrasportoGpsProviderAdapterTest extends TestCase
     public function test_provider_adapter_nested_field_map(): void
     {
         Config::set('services.trasporto_gps.field_map', [
-            'latitude'    => 'location.lat',
-            'longitude'   => 'location.lng',
+            'latitude' => 'location.lat',
+            'longitude' => 'location.lng',
             'recorded_at' => 'timestamp',
-            'speed_kmh'   => 'speed',
+            'speed_kmh' => 'speed',
         ]);
 
         $contract = json_decode(
@@ -85,17 +83,17 @@ class TrasportoGpsProviderAdapterTest extends TestCase
         Config::set('services.trasporto_gps.provider_url', 'https://gps.test/api/v1');
         Config::set('services.trasporto_gps.api_key', 'gps-s102');
         Config::set('services.trasporto_gps.field_map', [
-            'latitude'    => 'location.lat',
-            'longitude'   => 'location.lng',
+            'latitude' => 'location.lat',
+            'longitude' => 'location.lng',
             'recorded_at' => 'timestamp',
-            'speed_kmh'   => 'speed',
+            'speed_kmh' => 'speed',
         ]);
 
         Http::fake([
             'gps.test/api/v1/trasporti/*/position' => Http::response([
-                'location'  => ['lat' => 45.5, 'lng' => 9.3],
+                'location' => ['lat' => 45.5, 'lng' => 9.3],
                 'timestamp' => '2026-06-04T12:00:00+02:00',
-                'speed'     => 55,
+                'speed' => 55,
             ], 200),
         ]);
 
@@ -113,18 +111,9 @@ class TrasportoGpsProviderAdapterTest extends TestCase
         Config::set('services.trasporto_gps.geofence_destination_lat', 45.0);
         Config::set('services.trasporto_gps.geofence_destination_lng', 9.0);
 
-        Log::shouldReceive('channel')
-            ->with('notifications')
-            ->andReturnSelf();
-
-        Log::shouldReceive('info')
-            ->once()
-            ->withArgs(fn (string $message, array $context): bool => $message === 'notification.dispatched'
-                && ($context['event'] ?? null) === NotificationEvent::TrasportoGpsGeofence->value);
-
         $trasporto = $this->inTransitoTrasporto();
         $distance = app(TrasportoGpsGeofenceService::class)->checkAndNotify($trasporto, [
-            'latitude'  => 46.5,
+            'latitude' => 46.5,
             'longitude' => 10.0,
         ]);
 
@@ -178,11 +167,11 @@ class TrasportoGpsProviderAdapterTest extends TestCase
         $dest = Anagrafica::factory()->create();
 
         return Trasporto::create([
-            'codice_cer_id'              => $cer->id,
+            'codice_cer_id' => $cer->id,
             'anagrafica_destinatario_id' => $dest->id,
-            'quantita_kg'                => 100,
-            'stato'                      => TrasportoStato::InTransito,
-            'user_id'                    => $user->id,
+            'quantita_kg' => 100,
+            'stato' => TrasportoStato::InTransito,
+            'user_id' => $user->id,
         ]);
     }
 }

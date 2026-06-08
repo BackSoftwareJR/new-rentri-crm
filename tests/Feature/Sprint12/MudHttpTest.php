@@ -58,12 +58,12 @@ class MudHttpTest extends TestCase
         $mud->refresh();
         $this->assertSame(MudStato::Completata, $mud->stato);
         $this->assertNotNull($mud->export_payload);
-        $this->assertSame('mud-json-stub-v1', $mud->export_payload['formato'] ?? null);
+        $this->assertSame('mud-json-v1', $mud->export_payload['formato'] ?? null);
 
         Livewire::actingAs($user)
             ->test(MudShow::class, ['dichiarazione' => $mud])
             ->call('exportJson')
-            ->assertFileDownloaded('mud-'.$anno.'-stub.json');
+            ->assertFileDownloaded('mud-'.$anno.'.json');
     }
 
     public function test_operatore_cannot_access_mud(): void

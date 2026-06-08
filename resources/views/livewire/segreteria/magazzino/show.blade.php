@@ -15,11 +15,18 @@
     @if ($serbatoioAlert)
         <div class="seg-card seg-card-padding-sm seg-alert-banner" role="alert">
             <strong>Alert serbatoio:</strong>
-            @if ($serbatoioAlert['stato'] === 'superata')
+            @if (($serbatoioAlert['sotto_soglia_minima'] ?? false))
+                <x-badge-stato stato="danger" label="Sotto soglia minima" />
+                <span class="seg-muted-inline">
+                    Giacenza {{ number_format($serbatoioAlert['quantita_attuale_kg'], 2, ',', '.') }} kg
+                    — soglia minima {{ number_format($serbatoioAlert['soglia_minima_kg'], 2, ',', '.') }} kg
+                </span>
+            @elseif ($serbatoioAlert['stato'] === 'superata')
                 <x-badge-stato stato="danger" label="Soglia superata" />
             @else
                 <x-badge-stato stato="warning" label="Attenzione (≥{{ \App\Domain\Magazzino\MagazzinoService::SOGLIA_ATTENZIONE_PCT }}%)" />
             @endif
+            @if (! ($serbatoioAlert['sotto_soglia_minima'] ?? false))
             <span class="seg-muted-inline">
                 Giacenza {{ number_format($serbatoioAlert['quantita_attuale_kg'], 2, ',', '.') }} kg
                 @if ($serbatoioAlert['limite_kg'])
@@ -27,6 +34,7 @@
                     ({{ number_format($serbatoioAlert['percentuale'], 1, ',', '.') }}%)
                 @endif
             </span>
+            @endif
         </div>
     @endif
 
@@ -37,6 +45,21 @@
     </div>
 
     <div class="mag-detail-grid">
+        <section class="seg-card seg-card-padding">
+            <h2 class="mag-section-title">Soglia minima giacenza</h2>
+            <p class="mag-section-lead">Imposta la soglia sotto la quale scattano alert automatici (controllo ogni 6 ore).</p>
+            <form wire:submit="salvaSogliaMinima" class="seg-form-grid">
+                <div class="seg-form-group">
+                    <label class="seg-label">Soglia minima ({{ $serbatoio['um'] }})</label>
+                    <input type="number" step="0.0001" min="0" wire:model="soglia_minima_kg" class="seg-input @error('soglia_minima_kg') is-invalid @enderror" placeholder="Es. 50" />
+                    @error('soglia_minima_kg') <p class="seg-field-error">{{ $message }}</p> @enderror
+                </div>
+                <div class="seg-form-group seg-form-group--span2">
+                    <button type="submit" class="seg-btn seg-btn-secondary" wire:loading.attr="disabled">Salva soglia</button>
+                </div>
+            </form>
+        </section>
+
         <section class="seg-card seg-card-padding">
             <h2 class="mag-section-title">Carico manuale</h2>
             <p class="mag-section-lead">Registra un carico diretto sul serbatoio. Verrà creato un movimento in registro e aggiornata la giacenza.</p>

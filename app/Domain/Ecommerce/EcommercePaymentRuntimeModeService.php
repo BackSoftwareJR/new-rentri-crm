@@ -42,7 +42,7 @@ class EcommercePaymentRuntimeModeService
     {
         return match ($this->modeKind()) {
             'offline'    => 'Pagamenti demo offline',
-            'stub'       => 'Pagamenti stub',
+            'stub'       => 'Checkout interno',
             'production' => 'Stripe produzione',
             default      => 'Stripe sandbox',
         };

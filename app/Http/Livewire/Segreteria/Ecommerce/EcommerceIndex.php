@@ -4,6 +4,7 @@ namespace App\Http\Livewire\Segreteria\Ecommerce;
 
 use App\Domain\Ecommerce\EcommerceProdottoImmagineService;
 use App\Domain\Ecommerce\EcommerceService;
+use App\Domain\Ecommerce\StripeDisputeService;
 use App\Domain\Ecommerce\StripeDisputeStubService;
 use App\Domain\Ecommerce\StripeProductionSwitchService;
 use App\Domain\Ecommerce\StripeReconciliationReportService;
@@ -72,6 +73,7 @@ class EcommerceIndex extends SegreteriaPage
         $filters = array_filter([
             'categoria' => $this->categoria !== '' ? $this->categoria : null,
             'q'         => $this->search !== '' ? $this->search : null,
+            'per_page'  => 12,
         ], fn ($v) => $v !== null && $v !== '');
 
         $ordiniFilters = array_filter([
@@ -79,7 +81,9 @@ class EcommerceIndex extends SegreteriaPage
         ], fn ($v) => $v !== null && $v !== '');
 
         $stripeSwitch = app(StripeProductionSwitchService::class);
-        $reconciliation = app(StripeReconciliationReportService::class);
+        $stripeChecklist = $stripeSwitch->unifiedChecklist();
+        $reconciliation = app(StripeReconciliationReportService::class)->hubSnapshot(previewLimit: 10);
+        $disputeStub = app(StripeDisputeStubService::class);
 
         return $this->segreteriaView(
             'livewire.segreteria.ecommerce.index',
@@ -90,12 +94,14 @@ class EcommerceIndex extends SegreteriaPage
                 'cartCount'             => $ecommerce->cartCount(),
                 'service'               => $ecommerce,
                 'immagini'              => $immagini,
-                'stripeSwitch'          => $stripeSwitch->summary(),
-                'stripeChecklist'       => $stripeSwitch->unifiedChecklist(),
+                'stripeSwitch'          => $stripeSwitch->summaryFromChecklist($stripeChecklist),
+                'stripeChecklist'       => $stripeChecklist,
                 'stripeRollback'        => $stripeSwitch->rollbackSteps(),
-                'reconciliationSummary' => $reconciliation->summary(),
-                'reconciliationRows'    => $reconciliation->rows()->take(10),
-                'disputeWorkflow'       => app(StripeDisputeStubService::class)->workflowSteps(),
+                'reconciliationSummary' => $reconciliation['summary'],
+                'reconciliationRows'    => $reconciliation['rows'],
+                'disputeWorkflow'       => $disputeStub->workflowSteps(),
+                'disputeStubEnabled'    => $disputeStub->isStubEnabled(),
+                'openDisputes'          => app(StripeDisputeService::class)->openDisputes(20),
             ],
             'ecommerce',
             'E-commerce',

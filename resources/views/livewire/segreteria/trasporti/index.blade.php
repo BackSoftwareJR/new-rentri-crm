@@ -6,6 +6,12 @@
             <h1>Trasporti rifiuti</h1>
             <p>Gestione trasporti collegati alle richieste di svuotamento serbatoio.</p>
         </div>
+        <div class="seg-header-actions">
+            <a href="{{ route('segreteria.trasporti.create') }}" class="seg-btn seg-btn-primary" wire:navigate>Nuovo trasporto</a>
+            <button type="button" class="seg-btn seg-btn-secondary" wire:click="exportCsv">
+                Esporta CSV
+            </button>
+        </div>
     </div>
 
     <div class="seg-kpi-grid">

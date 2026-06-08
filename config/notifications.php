@@ -67,6 +67,18 @@ return [
         NotificationEvent::BusinessKpiBreach->value => [
             'enabled' => true,
         ],
+        NotificationEvent::VfuConsegnaAgenzia->value => [
+            'enabled' => true,
+        ],
+        NotificationEvent::VfuOperatoreAssegnato->value => [
+            'enabled' => true,
+        ],
+        NotificationEvent::VfuRottamato->value => [
+            'enabled' => true,
+        ],
+        NotificationEvent::GdprDeletionRequested->value => [
+            'enabled' => true,
+        ],
     ],
 
 ];

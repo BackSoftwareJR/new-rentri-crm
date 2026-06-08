@@ -63,11 +63,33 @@
                     <input type="text" wire:model="nazione" class="seg-input" />
                 </div>
                 <x-form-field label="Targa" name="targa" required>
-                    <input type="text" id="targa" wire:model="targa" class="seg-input" style="text-transform: uppercase;" />
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <input type="text" id="targa" wire:model="targa" class="seg-input" style="text-transform: uppercase;flex:1;" />
+                        <x-barcode-scanner
+                            target="targa"
+                            button-label="Scansiona"
+                            x-on:scanner-result.window="if ($event.detail.target === 'targa') $wire.fillFromScan($event.detail.value, 'targa')"
+                        />
+                    </div>
                 </x-form-field>
                 <x-form-field label="Telaio" name="telaio" required hint="17 caratteri, senza spazi.">
-                    <input type="text" id="telaio" wire:model="telaio" class="seg-input" maxlength="17" style="text-transform: uppercase;" />
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <input type="text" id="telaio" wire:model="telaio" class="seg-input" maxlength="17" style="text-transform: uppercase;flex:1;" />
+                        <x-barcode-scanner
+                            target="telaio"
+                            button-label="Scansiona"
+                            x-on:scanner-result.window="if ($event.detail.target === 'telaio') $wire.fillFromScan($event.detail.value, 'telaio')"
+                        />
+                    </div>
                 </x-form-field>
+                <div class="seg-form-group--span2" style="margin-bottom:4px;">
+                    <x-barcode-scanner
+                        target="auto"
+                        button-label="Scansiona targa/telaio"
+                        button-class="seg-btn seg-btn-secondary seg-btn-sm"
+                        x-on:scanner-result.window="if ($event.detail.target === 'auto') $wire.fillFromScan($event.detail.value)"
+                    />
+                </div>
                 <x-form-field label="Codice motore" name="codice_motore" required>
                     <input type="text" id="codice_motore" wire:model="codice_motore" class="seg-input" />
                 </x-form-field>
@@ -99,9 +121,99 @@
                     <input type="text" wire:model="codice_fiscale" class="seg-input" />
                 </div>
                 <div>
-                    <label class="seg-label">Provincia</label>
+                    <label class="seg-label">Indirizzo</label>
+                    <input type="text" wire:model="indirizzo" class="seg-input" />
+                </div>
+                <div>
+                    <label class="seg-label">Comune</label>
+                    <input type="text" wire:model="comune" class="seg-input" />
+                </div>
+                <div>
+                    <label class="seg-label">Provincia residenza</label>
                     <input type="text" wire:model="provincia" class="seg-input" maxlength="2" style="text-transform: uppercase;" />
                 </div>
+            </div>
+
+            <h3 class="seg-step-title" style="margin-top: 24px; font-size: 1rem;">Dati proprietario (MASE)</h3>
+            <div class="seg-form-grid">
+                <div>
+                    <label class="seg-label">Email proprietario</label>
+                    <input type="email" wire:model="email_proprietario" class="seg-input" />
+                    @error('email_proprietario') <p class="seg-field-error">{{ $message }}</p> @enderror
+                </div>
+                <div>
+                    <label class="seg-label">PEC proprietario</label>
+                    <input type="email" wire:model="pec_proprietario" class="seg-input" placeholder="facoltativo — notifiche certificate via PEC" />
+                    @error('pec_proprietario') <p class="seg-field-error">{{ $message }}</p> @enderror
+                </div>
+                <div>
+                    <label class="seg-label">Data di nascita</label>
+                    <input type="date" wire:model="data_nascita" class="seg-input" />
+                    @error('data_nascita') <p class="seg-field-error">{{ $message }}</p> @enderror
+                </div>
+                <div>
+                    <label class="seg-label">Comune di nascita</label>
+                    <input type="text" wire:model="luogo_nascita" class="seg-input" />
+                    @error('luogo_nascita') <p class="seg-field-error">{{ $message }}</p> @enderror
+                </div>
+                <div>
+                    <label class="seg-label">Provincia di nascita</label>
+                    <input type="text" wire:model="provincia_nascita" class="seg-input" maxlength="2" style="text-transform: uppercase;" />
+                    @error('provincia_nascita') <p class="seg-field-error">{{ $message }}</p> @enderror
+                </div>
+                <div>
+                    <label class="seg-label">Nazionalità</label>
+                    <input type="text" wire:model="nazionalita_proprietario" class="seg-input" />
+                    @error('nazionalita_proprietario') <p class="seg-field-error">{{ $message }}</p> @enderror
+                </div>
+                <div>
+                    <label class="seg-label">Tipo documento identità</label>
+                    <select wire:model="tipo_documento_identita" class="seg-input">
+                        <option value="">— Seleziona —</option>
+                        <option value="CI">Carta d'identità</option>
+                        <option value="passaporto">Passaporto</option>
+                        <option value="patente">Patente</option>
+                    </select>
+                    @error('tipo_documento_identita') <p class="seg-field-error">{{ $message }}</p> @enderror
+                </div>
+                <div>
+                    <label class="seg-label">Numero documento</label>
+                    <input type="text" wire:model="numero_documento_identita" class="seg-input" />
+                    @error('numero_documento_identita') <p class="seg-field-error">{{ $message }}</p> @enderror
+                </div>
+            </div>
+
+            <h3 class="seg-step-title" style="margin-top: 24px; font-size: 1rem;">Veicolo — provenienza e stato</h3>
+            <div class="seg-form-grid">
+                <div>
+                    <label class="seg-label">Provenienza veicolo</label>
+                    <select wire:model="provenienza_veicolo" class="seg-input">
+                        <option value="">— Seleziona —</option>
+                        <option value="privato">Privato</option>
+                        <option value="assicurazione">Assicurazione</option>
+                        <option value="officina">Officina</option>
+                        <option value="altro">Altro</option>
+                    </select>
+                    @error('provenienza_veicolo') <p class="seg-field-error">{{ $message }}</p> @enderror
+                </div>
+                <div class="seg-form-group--span2">
+                    <label class="seg-label">Note carrozzeria / danni visibili</label>
+                    <textarea wire:model="note_carrozzeria" rows="3" class="seg-input" placeholder="Descrivi eventuali danni o stato carrozzeria…"></textarea>
+                    @error('note_carrozzeria') <p class="seg-field-error">{{ $message }}</p> @enderror
+                </div>
+                <div>
+                    <label class="seg-label" style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" wire:model.live="targa_estera" />
+                        Targa estera
+                    </label>
+                </div>
+                @if ($targa_estera)
+                    <div>
+                        <label class="seg-label">Targa estera</label>
+                        <input type="text" wire:model="targa_estera_valore" class="seg-input" style="text-transform: uppercase;" />
+                        @error('targa_estera_valore') <p class="seg-field-error">{{ $message }}</p> @enderror
+                    </div>
+                @endif
             </div>
         @endif
 
@@ -169,6 +281,26 @@
                 <dd>{{ $peso_kg }} kg</dd>
                 <dt>Proprietario</dt>
                 <dd>{{ $proprietario ?: trim($nome.' '.$cognome) ?: '—' }}</dd>
+                @if ($email_proprietario)
+                    <dt>Email proprietario</dt>
+                    <dd>{{ $email_proprietario }}</dd>
+                @endif
+                @if ($pec_proprietario)
+                    <dt>PEC proprietario</dt>
+                    <dd>{{ $pec_proprietario }}</dd>
+                @endif
+                @if ($data_nascita)
+                    <dt>Data di nascita</dt>
+                    <dd>{{ \Illuminate\Support\Carbon::parse($data_nascita)->format('d/m/Y') }}</dd>
+                @endif
+                @if ($luogo_nascita || $provincia_nascita)
+                    <dt>Luogo di nascita</dt>
+                    <dd>{{ trim($luogo_nascita.' ('.$provincia_nascita.')', ' ()') ?: '—' }}</dd>
+                @endif
+                @if ($provenienza_veicolo)
+                    <dt>Provenienza</dt>
+                    <dd>{{ ucfirst($provenienza_veicolo) }}</dd>
+                @endif
                 <dt>Documenti</dt>
                 <dd>
                     @if ($vfuRegistration)

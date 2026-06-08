@@ -46,6 +46,8 @@ class KpiRedisCacheService
 
     public function forget(): void
     {
+        app(DashboardKpiService::class)->forgetCache();
+
         if (! $this->enabled()) {
             return;
         }

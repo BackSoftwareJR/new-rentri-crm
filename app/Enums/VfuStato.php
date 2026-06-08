@@ -10,6 +10,8 @@ enum VfuStato: string
     case AttesaBonifica = 'attesa_bonifica';
     case InBonifica = 'in_bonifica';
     case Bonificato = 'bonificato';
+    case InSmontaggio = 'in_smontaggio';
+    case Smontato = 'smontato';
     case InviatoAgenzia = 'inviato_agenzia';
     case Rottamato = 'rottamato';
     case Annullato = 'annullato';
@@ -23,6 +25,8 @@ enum VfuStato: string
             self::AttesaBonifica => 'Attesa bonifica',
             self::InBonifica => 'In bonifica',
             self::Bonificato => 'Bonificato',
+            self::InSmontaggio => 'In smontaggio',
+            self::Smontato => 'Smontato',
             self::InviatoAgenzia => 'Inviato ad agenzia',
             self::Rottamato => 'Rottamato',
             self::Annullato => 'Annullato',
@@ -35,7 +39,9 @@ enum VfuStato: string
             self::Bozza, self::InAccettazione => 'muted',
             self::Accettato, self::AttesaBonifica => 'info',
             self::InBonifica => 'warning',
-            self::Bonificato, self::Rottamato => 'success',
+            self::Bonificato => 'success',
+            self::InSmontaggio => 'warning',
+            self::Smontato, self::Rottamato => 'success',
             self::InviatoAgenzia => 'info',
             self::Annullato => 'danger',
         };

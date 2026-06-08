@@ -4,8 +4,11 @@ namespace App\Models;
 
 use App\Enums\VfuStato;
 use App\Models\Concerns\HasDemoScope;
+use App\Traits\BelongsToSito;
+use Database\Factories\VfuRegistrationFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -13,9 +16,8 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class VfuRegistration extends Model
 {
-    /** @use HasFactory<\Database\Factories\VfuRegistrationFactory> */
-    use HasDemoScope;
-    use HasFactory;
+    /** @use HasFactory<VfuRegistrationFactory> */
+    use BelongsToSito, HasDemoScope, HasFactory, SoftDeletes;
 
     protected $table = 'vfu_registrations';
 
@@ -30,6 +32,8 @@ class VfuRegistration extends Model
         'nome',
         'cognome',
         'proprietario',
+        'email_proprietario',
+        'pec_proprietario',
         'codice_fiscale',
         'regione',
         'indirizzo',
@@ -37,6 +41,14 @@ class VfuRegistration extends Model
         'provincia',
         'data_nascita',
         'luogo_nascita',
+        'nazionalita_proprietario',
+        'provincia_nascita',
+        'tipo_documento_identita',
+        'numero_documento_identita',
+        'note_carrozzeria',
+        'provenienza_veicolo',
+        'targa_estera',
+        'targa_estera_valore',
         'stato',
         'certificato_provvisorio_caricato',
         'peso_kg',
@@ -51,21 +63,24 @@ class VfuRegistration extends Model
         'is_demo',
         'data_accettazione',
         'data_invio_agenzia',
+        'rottamato_at',
         'bonifica_pericolosi_completata_at',
     ];
 
     protected function casts(): array
     {
         return [
-            'stato'                             => VfuStato::class,
-            'peso_kg'                           => 'decimal:2',
-            'data_consegna'                     => 'date',
-            'data_accettazione'                 => 'date',
-            'data_nascita'                      => 'date',
-            'data_invio_agenzia'                => 'datetime',
-            'certificato_provvisorio_caricato'  => 'boolean',
+            'stato' => VfuStato::class,
+            'peso_kg' => 'decimal:2',
+            'data_consegna' => 'date',
+            'data_accettazione' => 'date',
+            'data_nascita' => 'date',
+            'data_invio_agenzia' => 'datetime',
+            'rottamato_at' => 'datetime',
+            'certificato_provvisorio_caricato' => 'boolean',
+            'targa_estera' => 'boolean',
             'bonifica_pericolosi_completata_at' => 'datetime',
-            'is_demo'                           => 'boolean',
+            'is_demo' => 'boolean',
         ];
     }
 
@@ -84,9 +99,26 @@ class VfuRegistration extends Model
         return $this->hasOne(BonificaVfu::class, 'vfu_registration_id');
     }
 
+    public function smontaggioSessions(): HasMany
+    {
+        return $this->hasMany(SmontaggioSession::class, 'vfu_registration_id');
+    }
+
+    public function smontaggioAttivo(): HasOne
+    {
+        return $this->hasOne(SmontaggioSession::class, 'vfu_registration_id')
+            ->whereIn('stato', ['avviato', 'in_corso'])
+            ->latest();
+    }
+
     public function agenzia(): BelongsTo
     {
         return $this->belongsTo(Anagrafica::class, 'agenzia_anagrafica_id');
+    }
+
+    public function operatoreAssegnato(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'operatore_assegnato_id');
     }
 
     public function registroMovimenti(): MorphMany

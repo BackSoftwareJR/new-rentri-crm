@@ -13,6 +13,8 @@ class RentriEndpoints
 {
     public const FIR_VIDIMazione = '/vidimazione-formulari/v1.0';
 
+    public const OPERATORI = '/operatori/v1.0';
+
     public const CODIFICHE_CER = '/codifiche/v1.0/cer';
 
     public const REGISTRO_TRASMISSIONE = '/registro/v1.0/trasmissione';
@@ -35,6 +37,11 @@ class RentriEndpoints
     public static function registroTrasmissioneResultQuery(string $transazioneId): array
     {
         return ['transazione_id' => $transazioneId];
+    }
+
+    public static function operatoreLookupPath(string $cfOrPiva): string
+    {
+        return self::OPERATORI.'/'.rawurlencode(strtoupper(trim($cfOrPiva)));
     }
 
     /**

@@ -161,6 +161,7 @@ class RentriRegistryService implements RentriRegistryServiceInterface
     private function pendingMovimentiQuery(CarbonInterface $periodoDa, CarbonInterface $periodoA): Builder
     {
         return RegistroMovimento::query()
+            ->forActiveSito()
             ->where('rentri_trasmesso', false)
             ->whereNull('locked_at')
             ->whereBetween('data_movimento', [

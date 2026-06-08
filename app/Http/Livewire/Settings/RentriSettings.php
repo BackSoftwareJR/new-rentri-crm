@@ -62,6 +62,12 @@ class RentriSettings extends SegreteriaPage
 
     public ?int $lastCodificheCount = null;
 
+    public ?int $lastCodificheSync = null;
+
+    public ?int $lastSerbatoi = null;
+
+    public ?string $lastSyncError = null;
+
     /** @var array<string, mixed>|null */
     public ?array $sandboxValidationResult = null;
 
@@ -253,10 +259,25 @@ class RentriSettings extends SegreteriaPage
                 $result = $onboarding->testConnection($apiClient);
                 $settings = RentriSetting::instance()->fresh();
                 $this->lastCodificheCount = $result['codifiche_count'];
-                session()->flash('success', sprintf(
-                    'Connessione RENTRI verificata. Codifiche CER disponibili: %d.',
-                    $result['codifiche_count'],
-                ));
+                $this->lastCodificheSync = $result['codifiche_synced'];
+                $this->lastSerbatoi = $result['serbatoi_created'];
+                $this->lastSyncError = $result['sync_error'];
+
+                if ($result['sync_error'] !== null) {
+                    session()->flash('warning', sprintf(
+                        'Connessione RENTRI verificata (%d CER). Sincronizzazione automatica fallita: %s',
+                        $result['codifiche_count'],
+                        $result['sync_error'],
+                    ));
+                } else {
+                    session()->flash('success', sprintf(
+                        'Connessione RENTRI verificata. %d codici CER sincronizzati • %d serbatoi pronti.',
+                        $result['codifiche_synced'],
+                        $result['serbatoi_created'],
+                    ));
+                }
+
+                $onboarding->completeOnboarding();
             }
         } catch (RentriApiException $e) {
             $this->addError('health', $e->getMessage());

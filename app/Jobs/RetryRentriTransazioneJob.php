@@ -20,7 +20,9 @@ class RetryRentriTransazioneJob implements ShouldQueue
 
     public function __construct(
         public int $transazioneId,
-    ) {}
+    ) {
+        $this->onQueue('rentri');
+    }
 
     public function handle(RentriTransazioneRetryExecutor $executor): void
     {

@@ -2,12 +2,18 @@
 
 namespace App\Domain\Vfu;
 
+use App\Domain\Audit\ActivityLogService;
 use App\Domain\Magazzino\MagazzinoService;
+use App\Domain\Notifications\NotificationService;
+use App\Enums\NotificationEvent;
 use App\Enums\RegistroMovimentoTipo;
 use App\Enums\VfuStato;
 use App\Models\CodiceCer;
 use App\Models\RegistroMovimento;
+use App\Models\User;
 use App\Models\VfuRegistration;
+use App\Services\Push\WebPushService;
+use App\Support\Logging\StructuredLogService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
@@ -21,11 +27,17 @@ class VfuAccettazioneService
     public function __construct(
         private readonly VfuDocumentService $documentService,
         private readonly MagazzinoService $magazzino,
+        private readonly StructuredLogService $logger,
+        private readonly NotificationService $notifications,
+        private readonly VfuNotificationService $vfuNotifications,
+        private readonly ActivityLogService $audit,
+        private readonly WebPushService $webPush,
     ) {}
 
     public function query(array $filters = []): Builder
     {
         $query = VfuRegistration::query()
+            ->forActiveSito()
             ->withCount([
                 'documents as has_cert_definitivo' => fn ($q) => $q->where(
                     'tipo',
@@ -72,6 +84,7 @@ class VfuAccettazioneService
     public function kpi(): array
     {
         $counts = VfuRegistration::query()
+            ->forActiveSito()
             ->selectRaw('stato, COUNT(*) as total')
             ->groupBy('stato')
             ->pluck('total', 'stato');
@@ -82,7 +95,7 @@ class VfuAccettazioneService
             'accettato' => (int) ($counts[VfuStato::Accettato->value] ?? 0)
                 + (int) ($counts[VfuStato::AttesaBonifica->value] ?? 0),
             'in_bonifica' => (int) ($counts[VfuStato::InBonifica->value] ?? 0),
-            'totale' => (int) VfuRegistration::count(),
+            'totale' => (int) VfuRegistration::query()->forActiveSito()->count(),
         ];
     }
 
@@ -95,8 +108,10 @@ class VfuAccettazioneService
 
         if ($existing) {
             $existing->update($payload);
+            $registration = $existing->fresh('documents');
+            $this->auditVfu('VFU aggiornato', $registration);
 
-            return $existing->fresh('documents');
+            return $registration;
         }
 
         $byTelaio = ! empty($payload['telaio'])
@@ -108,19 +123,26 @@ class VfuAccettazioneService
 
         if ($byTelaio) {
             $byTelaio->update($payload);
+            $registration = $byTelaio->fresh('documents');
+            $this->auditVfu('VFU aggiornato', $registration);
 
-            return $byTelaio->fresh('documents');
+            return $registration;
         }
 
         if ($byTarga) {
             $byTarga->update($payload);
+            $registration = $byTarga->fresh('documents');
+            $this->auditVfu('VFU aggiornato', $registration);
 
-            return $byTarga->fresh('documents');
+            return $registration;
         }
 
         $payload['stato'] = VfuStato::Bozza;
 
-        return VfuRegistration::create($payload);
+        $registration = VfuRegistration::create($payload);
+        $this->auditVfu('VFU creato', $registration);
+
+        return $registration;
     }
 
     public function completeAccettazione(VfuRegistration $registration): VfuRegistration
@@ -145,7 +167,23 @@ class VfuAccettazioneService
 
             $this->registraCaricoVfu($registration->fresh());
 
-            return $registration->fresh(['documents', 'registroMovimenti']);
+            $fresh = $registration->fresh(['documents', 'registroMovimenti']);
+            $this->auditVfu('VFU accettazione completata', $fresh, [
+                'stato' => VfuStato::Accettato->value,
+            ]);
+
+            try {
+                $this->webPush->sendToRoles(
+                    'operatore',
+                    'Nuovo VFU: '.$fresh->targa,
+                    'Pronto per bonifica',
+                    route('operatore.bonifica.wizard', $fresh),
+                );
+            } catch (\Throwable) {
+                // Push failures must never break core workflow.
+            }
+
+            return $fresh;
         });
     }
 
@@ -185,7 +223,7 @@ class VfuAccettazioneService
         return $movimento;
     }
 
-    public function inviaAgenziaStub(VfuRegistration $registration, int $anagraficaId): VfuRegistration
+    public function inviaAgenzia(VfuRegistration $registration, int $anagraficaId): VfuRegistration
     {
         $registration->forceFill([
             'stato'                 => VfuStato::InviatoAgenzia,
@@ -193,18 +231,261 @@ class VfuAccettazioneService
             'data_invio_agenzia'    => now(),
         ])->save();
 
-        return $registration->fresh(['agenzia', 'documents']);
+        $fresh = $registration->fresh(['agenzia', 'documents']);
+        $this->auditVfu('VFU inviato ad agenzia', $fresh, [
+            'agenzia_anagrafica_id' => $anagraficaId,
+        ]);
+
+        return $fresh;
+    }
+
+    public function rottama(VfuRegistration $registration): VfuRegistration
+    {
+        if (! in_array($registration->stato, [VfuStato::Smontato, VfuStato::Bonificato], true)) {
+            throw ValidationException::withMessages([
+                'stato' => 'La pratica può essere chiusa solo da stato Bonificato o Smontato.',
+            ]);
+        }
+
+        $registration->forceFill([
+            'stato'        => VfuStato::Rottamato,
+            'rottamato_at' => now(),
+        ])->save();
+
+        $this->logger->info('vfu', 'vfu.rottamato', 'Pratica VFU chiusa — rottamazione', [
+            'entity_type' => 'vfu_registration',
+            'entity_id'   => $registration->id,
+            'extra'       => [
+                'targa'  => $registration->targa,
+                'telaio' => $registration->telaio,
+            ],
+        ]);
+
+        $this->notifications->notifyInApp(
+            NotificationEvent::VfuRottamato,
+            "Pratica chiusa: {$registration->targa}",
+            null,
+            'Veicolo segnato come rottamato',
+            route('segreteria.vfu.show', $registration),
+            [
+                'vfu_id' => $registration->id,
+                'targa'  => $registration->targa,
+                'telaio' => $registration->telaio,
+            ],
+        );
+
+        $this->vfuNotifications->notifyProprietario($registration->fresh());
+
+        $fresh = $registration->fresh(['documents', 'agenzia']);
+        $this->auditVfu('VFU rottamato', $fresh);
+
+        return $fresh;
+    }
+
+    public function assegnaOperatore(VfuRegistration $registration, User $operatore): VfuRegistration
+    {
+        $registration->forceFill([
+            'operatore_assegnato_id' => $operatore->id,
+        ])->save();
+
+        $fresh = $registration->fresh(['operatoreAssegnato']);
+        $title = "Ti è stato assegnato VFU {$fresh->targa}";
+        $url = route('operatore.bonifica.wizard', $fresh);
+
+        $this->auditVfu('VFU operatore assegnato', $fresh, [
+            'operatore_assegnato_id' => $operatore->id,
+            'operatore_nome' => $operatore->name,
+        ]);
+
+        $this->notifications->notifyInApp(
+            NotificationEvent::VfuOperatoreAssegnato,
+            $title,
+            $operatore,
+            null,
+            $url,
+            [
+                'vfu_id' => $fresh->id,
+                'targa'  => $fresh->targa,
+            ],
+        );
+
+        try {
+            $this->webPush->send($operatore, $title, 'Bonifica assegnata', $url);
+        } catch (\Throwable) {
+            // Push failures must never break core workflow.
+        }
+
+        return $fresh;
     }
 
     public function delete(VfuRegistration $registration): void
     {
         DB::transaction(function () use ($registration) {
+            $this->auditVfu('VFU eliminato', $registration);
+
             foreach ($registration->documents as $doc) {
                 $this->documentService->deleteFile($doc);
             }
             $registration->documents()->delete();
             $registration->delete();
         });
+    }
+
+    /** @return list<string> */
+    public static function csvImportHeaders(): array
+    {
+        return [
+            'targa',
+            'telaio',
+            'marca',
+            'modello',
+            'anno',
+            'colore',
+            'data_accettazione',
+            'nome_proprietario',
+            'cf_proprietario',
+            'email_proprietario',
+        ];
+    }
+
+    /**
+     * @param  list<array<string, string>>  $rows
+     * @return array{
+     *   imported: int,
+     *   errors: list<array{row: int, message: string, data: array<string, string>}>,
+     *   total: int
+     * }
+     */
+    public function accettaBatch(array $rows): array
+    {
+        $imported = 0;
+        $errors = [];
+
+        foreach ($rows as $index => $row) {
+            $rowNumber = $index + 2;
+
+            try {
+                $payload = $this->mapImportRow($row);
+                $registration = $this->saveDraft(null, $payload);
+
+                if (! empty($payload['_data_accettazione'])) {
+                    $registration->forceFill([
+                        'data_accettazione' => $payload['_data_accettazione'],
+                        'stato'             => VfuStato::InAccettazione,
+                    ])->save();
+                }
+
+                $imported++;
+            } catch (ValidationException $e) {
+                $errors[] = [
+                    'row'     => $rowNumber,
+                    'message' => collect($e->errors())->flatten()->first() ?? 'Validazione fallita.',
+                    'data'    => $row,
+                ];
+            } catch (\Throwable $e) {
+                $errors[] = [
+                    'row'     => $rowNumber,
+                    'message' => $e->getMessage(),
+                    'data'    => $row,
+                ];
+            }
+        }
+
+        return [
+            'imported' => $imported,
+            'errors'   => $errors,
+            'total'    => count($rows),
+        ];
+    }
+
+    /**
+     * @param  array<string, string>  $row
+     * @return array<string, mixed>
+     */
+    private function mapImportRow(array $row): array
+    {
+        $targa = strtoupper(trim($row['targa'] ?? ''));
+        $telaio = strtoupper(trim($row['telaio'] ?? ''));
+
+        if ($targa === '' || $telaio === '') {
+            throw ValidationException::withMessages([
+                'targa' => 'Targa e telaio sono obbligatori.',
+            ]);
+        }
+
+        $noteParts = [];
+        if (filled($row['colore'] ?? null)) {
+            $noteParts[] = 'Colore: '.trim($row['colore']);
+        }
+
+        $dataConsegna = null;
+        if (filled($row['anno'] ?? null) && is_numeric($row['anno'])) {
+            $dataConsegna = sprintf('%04d-01-01', (int) $row['anno']);
+        }
+
+        $dataAccettazione = null;
+        if (filled($row['data_accettazione'] ?? null)) {
+            $parsed = $this->parseImportDate($row['data_accettazione']);
+            if ($parsed === null) {
+                throw ValidationException::withMessages([
+                    'data_accettazione' => 'Formato data non valido (usare gg/mm/aaaa o aaaa-mm-gg).',
+                ]);
+            }
+            $dataAccettazione = $parsed;
+        }
+
+        $email = trim($row['email_proprietario'] ?? '');
+        if ($email !== '' && ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            throw ValidationException::withMessages([
+                'email_proprietario' => 'Email proprietario non valida.',
+            ]);
+        }
+
+        return [
+            'targa'              => $targa,
+            'telaio'             => $telaio,
+            'marca'              => trim($row['marca'] ?? ''),
+            'modello'            => trim($row['modello'] ?? ''),
+            'proprietario'       => trim($row['nome_proprietario'] ?? ''),
+            'codice_fiscale'     => strtoupper(trim($row['cf_proprietario'] ?? '')),
+            'email_proprietario' => $email ?: null,
+            'data_consegna'      => $dataConsegna,
+            'note'               => $noteParts !== [] ? implode(' · ', $noteParts) : null,
+            '_data_accettazione' => $dataAccettazione,
+        ];
+    }
+
+    private function parseImportDate(string $value): ?string
+    {
+        $value = trim($value);
+
+        if ($value === '') {
+            return null;
+        }
+
+        foreach (['d/m/Y', 'Y-m-d', 'd-m-Y'] as $format) {
+            try {
+                return \Illuminate\Support\Carbon::createFromFormat($format, $value)->toDateString();
+            } catch (\Throwable) {
+                // try next format
+            }
+        }
+
+        return null;
+    }
+
+    private function auditVfu(string $description, VfuRegistration $registration, array $properties = []): void
+    {
+        $this->audit->record(
+            'vfu',
+            $description,
+            $registration,
+            array_merge([
+                'targa'  => $registration->targa,
+                'telaio' => $registration->telaio,
+                'stato'  => $registration->stato->value,
+            ], $properties),
+        );
     }
 
     private function normalizePayload(array $data): array
@@ -220,6 +501,8 @@ class VfuAccettazioneService
             'nome',
             'cognome',
             'proprietario',
+            'email_proprietario',
+            'pec_proprietario',
             'codice_fiscale',
             'regione',
             'indirizzo',
@@ -227,9 +510,19 @@ class VfuAccettazioneService
             'provincia',
             'data_nascita',
             'luogo_nascita',
+            'nazionalita_proprietario',
+            'provincia_nascita',
+            'tipo_documento_identita',
+            'numero_documento_identita',
+            'note_carrozzeria',
+            'provenienza_veicolo',
+            'targa_estera',
+            'targa_estera_valore',
             'peso_kg',
             'note',
         ]);
+
+        unset($payload['_data_accettazione']);
 
         $payload['tipo_veicolo'] = $payload['tipo_veicolo'] ?? 'Autovettura';
         $payload['nazione'] = $payload['nazione'] ?? 'Italia';
@@ -242,6 +535,12 @@ class VfuAccettazioneService
         $payload['data_consegna'] = $data['data_consegna'] ?? now()->toDateString();
         $payload['proprietario'] = $payload['proprietario']
             ?? trim(($payload['nome'] ?? '').' '.($payload['cognome'] ?? ''));
+        $payload['nazionalita_proprietario'] = $payload['nazionalita_proprietario'] ?? 'Italiana';
+        $payload['provincia_nascita'] = strtoupper(trim($payload['provincia_nascita'] ?? '')) ?: null;
+        $payload['targa_estera'] = (bool) ($payload['targa_estera'] ?? false);
+        $payload['targa_estera_valore'] = $payload['targa_estera']
+            ? strtoupper(trim($payload['targa_estera_valore'] ?? '')) ?: null
+            : null;
 
         return $payload;
     }

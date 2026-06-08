@@ -76,5 +76,11 @@ class DashboardKpiServiceTest extends TestCase
         $this->assertGreaterThanOrEqual(1, $kpi['ecommerce_disponibili']);
         $this->assertGreaterThanOrEqual(1, $kpi['ecommerce_ordini_bozza']);
         $this->assertGreaterThanOrEqual(1, $kpi['movimenti_mese']);
+        $this->assertArrayHasKey('vfu_oggi', $kpi);
+        $this->assertArrayHasKey('vfu_in_bonifica', $kpi);
+        $this->assertArrayHasKey('trasporti_in_transito', $kpi);
+        $this->assertArrayHasKey('fatture_in_scadenza', $kpi);
+        $this->assertArrayHasKey('revenue_mese_corrente', $kpi);
+        $this->assertArrayHasKey('rentri_status', $kpi);
     }
 }

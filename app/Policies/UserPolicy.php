@@ -19,4 +19,39 @@ class UserPolicy
     {
         return $user->hasRole('operatore') && $user->id === $model->id;
     }
+
+    public function viewAny(User $user): bool
+    {
+        return $user->hasRole('admin');
+    }
+
+    public function create(User $user): bool
+    {
+        return $user->hasRole('admin');
+    }
+
+    public function update(User $authUser, User $targetUser): bool
+    {
+        return $authUser->hasRole('admin');
+    }
+
+    public function delete(User $authUser, User $targetUser): bool
+    {
+        return $authUser->hasRole('admin') && $authUser->id !== $targetUser->id;
+    }
+
+    public function toggleActive(User $authUser, User $targetUser): bool
+    {
+        return $authUser->hasRole('admin') && $authUser->id !== $targetUser->id;
+    }
+
+    public function resetPassword(User $authUser, User $targetUser): bool
+    {
+        return $authUser->hasRole('admin');
+    }
+
+    public function forceDisable2fa(User $authUser, User $targetUser): bool
+    {
+        return $authUser->hasRole('admin');
+    }
 }

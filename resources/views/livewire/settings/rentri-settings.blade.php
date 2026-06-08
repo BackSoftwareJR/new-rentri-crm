@@ -236,7 +236,26 @@
             @endif
 
             @if ($lastCodificheCount !== null)
-                <p class="seg-list-muted">Ultimo campione codifiche CER: <strong>{{ $lastCodificheCount }}</strong> voci.</p>
+                <p class="seg-list-muted">Codifiche CER disponibili: <strong>{{ $lastCodificheCount }}</strong> voci.</p>
+            @endif
+
+            @if ($lastSyncError !== null)
+                <div class="seg-card seg-card-padding-sm" style="background: #fef3cd; border-left: 4px solid #f59e0b; margin-bottom: 1rem;">
+                    <strong>⚠️ Connessione OK — sincronizzazione automatica fallita</strong>
+                    <p class="seg-list-muted" style="margin: 0.25rem 0 0;">{{ $lastSyncError }}</p>
+                    <button type="button" class="seg-btn seg-btn-secondary seg-btn-sm" style="margin-top: 0.5rem;" wire:click="testConnection">
+                        Riprova sincronizzazione
+                    </button>
+                </div>
+            @elseif ($lastCodificheSync !== null)
+                <div class="seg-card seg-card-padding-sm" style="background: #d1fae5; border-left: 4px solid #10b981; margin-bottom: 1rem;">
+                    <strong>
+                        ✅ Connesso
+                        • {{ $lastCodificheSync }} codici CER sincronizzati
+                        • {{ $lastSerbatoi }} serbatoi pronti
+                    </strong>
+                    <p class="seg-list-muted" style="margin: 0.25rem 0 0;">Sincronizzazione in background avviata (CER + blocchi FIR).</p>
+                </div>
             @endif
 
             @error('health') <p class="seg-field-error">{{ $message }}</p> @enderror
@@ -245,7 +264,10 @@
                 <button type="button" class="seg-btn seg-btn-secondary" wire:click="previousStep">Indietro</button>
                 <button type="button" class="seg-btn seg-btn-primary" wire:click="testConnection" wire:loading.attr="disabled">
                     <span wire:loading.remove wire:target="testConnection">{{ $onboardingComplete ? 'Ripeti test connessione' : 'Esegui test connessione' }}</span>
-                    <span wire:loading wire:target="testConnection">Verifica in corso…</span>
+                    <span wire:loading wire:target="testConnection">
+                        <svg style="display:inline;width:1em;height:1em;animation:spin 1s linear infinite;vertical-align:middle;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>
+                        Verifica e sincronizzazione in corso…
+                    </span>
                 </button>
             </div>
         @endif

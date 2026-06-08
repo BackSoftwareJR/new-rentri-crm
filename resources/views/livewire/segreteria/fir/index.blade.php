@@ -73,6 +73,7 @@
                         <th>Trasporto</th>
                         <th>Tracking</th>
                         <th>CER</th>
+                        <th>Azioni</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -100,6 +101,16 @@
                                 @endif
                             </td>
                             <td>{{ $f->trasporto?->codiceCer?->codice ?? '—' }}</td>
+                            <td>
+                                @if ($f->vidimato_at)
+                                    <button type="button" class="seg-btn seg-btn-ghost seg-btn-sm"
+                                        wire:click="downloadFirPdf({{ $f->id }})">
+                                        Scarica FIR PDF
+                                    </button>
+                                @else
+                                    —
+                                @endif
+                            </td>
                         </tr>
                     @endforeach
                 </tbody>

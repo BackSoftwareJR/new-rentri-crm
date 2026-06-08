@@ -37,7 +37,7 @@ class EcommerceStripeGatewayTest extends TestCase
         $runtime = app(EcommercePaymentRuntimeModeService::class);
 
         $this->assertTrue($runtime->isStub());
-        $this->assertSame('Pagamenti stub', $runtime->modeDisplayLabel());
+        $this->assertSame('Checkout interno', $runtime->modeDisplayLabel());
     }
 
     public function test_payment_runtime_live_requires_stripe_preflight(): void
@@ -145,9 +145,9 @@ class EcommerceStripeGatewayTest extends TestCase
 
         Livewire::actingAs($user)
             ->test(EcommerceOrdineShow::class, ['ordine' => $ordine])
-            ->assertSee('Pagamenti stub')
-            ->assertSee('Checkout sicuro')
-            ->assertSee('Avvia checkout');
+            ->assertSee('Checkout interno')
+            ->assertSee('Checkout')
+            ->assertSee('Conferma e avvia checkout');
     }
 
     public function test_carrello_displays_live_stripe_preflight_warning(): void

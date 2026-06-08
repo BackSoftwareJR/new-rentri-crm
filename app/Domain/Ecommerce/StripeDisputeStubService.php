@@ -3,7 +3,7 @@
 namespace App\Domain\Ecommerce;
 
 use App\Models\StripeWebhookEvent;
-use Illuminate\Support\Facades\Log;
+use App\Support\Logging\StructuredLogService;
 use Illuminate\Support\Facades\Route;
 
 /**
@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Route;
  */
 class StripeDisputeStubService
 {
+    public function __construct(private readonly StructuredLogService $logger) {}
     /** @var list<string> */
     public const DISPUTE_EVENT_TYPES = [
         'charge.dispute.created',
@@ -114,13 +115,16 @@ class StripeDisputeStubService
         $dispute = $event['data']['object'] ?? [];
         $disputeId = (string) ($dispute['id'] ?? '');
 
-        Log::channel('notifications')->info('stripe.dispute.stub', [
-            'stripe_event_id' => $eventId,
-            'event_type'      => $eventType,
-            'dispute_id'      => $disputeId,
-            'status'          => $dispute['status'] ?? null,
-            'amount'          => $dispute['amount'] ?? null,
-            'stub_mode'       => $this->isStubEnabled(),
+        $this->logger->info('stripe', 'stripe.dispute.stub', 'Evento dispute Stripe ricevuto (stub)', [
+            'entity_type' => 'StripeWebhookEvent',
+            'entity_id'   => $eventId,
+            'extra'       => [
+                'event_type' => $eventType,
+                'dispute_id' => $disputeId,
+                'status'     => $dispute['status'] ?? null,
+                'amount'     => $dispute['amount'] ?? null,
+                'stub_mode'  => $this->isStubEnabled(),
+            ],
         ]);
 
         if ($eventId !== '') {

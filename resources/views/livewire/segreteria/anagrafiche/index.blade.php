@@ -8,7 +8,12 @@
                 <span class="seg-muted-inline">({{ $anagrafiche->total() }} contatti)</span>
             </p>
         </div>
-        <a href="{{ route('segreteria.anagrafiche.create') }}" class="seg-btn seg-btn-primary" wire:navigate>+ Nuovo contatto</a>
+        <div class="seg-header-actions">
+            <button type="button" class="seg-btn seg-btn-secondary" wire:click="exportCsv">
+                Esporta CSV
+            </button>
+            <a href="{{ route('segreteria.anagrafiche.create') }}" class="seg-btn seg-btn-primary" wire:navigate>+ Nuovo contatto</a>
+        </div>
     </div>
 
     @if ($authAlerts['in_scadenza'] > 0 || $authAlerts['scadute'] > 0)
@@ -49,6 +54,7 @@
                         <th>SDI</th>
                         <th>Email</th>
                         <th>Conformità</th>
+                        <th>RENTRI</th>
                         <th class="seg-table-actions">Azioni</th>
                     </tr>
                 </thead>
@@ -92,6 +98,21 @@
                                     <x-badge-stato stato="danger" label="Non conforme" />
                                 @endif
                             </td>
+                            <td>
+                                @if (in_array($a->tipo, ['trasportatore', 'impianto'], true))
+                                    @if ($a->rentri_verificato_esito === 'iscritto')
+                                        <x-badge-stato stato="success" label="Iscritto" title="Iscritto RENTRI — {{ $a->rentri_iscrizione_numero }}" />
+                                    @elseif ($a->rentri_verificato_esito === 'non_trovato')
+                                        <x-badge-stato stato="warning" label="Non trovato" title="Non trovato su RENTRI" />
+                                    @elseif ($a->tipo === 'trasportatore')
+                                        <x-badge-stato stato="muted" label="Da verificare" title="Nessuna verifica RENTRI" />
+                                    @else
+                                        <span class="seg-text-muted">—</span>
+                                    @endif
+                                @else
+                                    <span class="seg-text-muted">—</span>
+                                @endif
+                            </td>
                             <td class="seg-table-actions">
                                 <a href="{{ route('segreteria.anagrafiche.edit', $a) }}" class="seg-btn seg-btn-ghost seg-btn-sm" wire:navigate>Modifica</a>
                                 <button type="button" class="seg-btn seg-btn-ghost seg-btn-sm seg-btn-danger"
@@ -103,7 +124,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="seg-table-empty">Nessuna anagrafica trovata.</td>
+                            <td colspan="8" class="seg-table-empty">Nessuna anagrafica trovata.</td>
                         </tr>
                     @endforelse
                 </tbody>

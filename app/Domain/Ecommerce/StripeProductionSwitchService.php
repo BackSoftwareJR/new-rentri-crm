@@ -100,12 +100,31 @@ class StripeProductionSwitchService
      */
     public function summary(): array
     {
-        $items = $this->unifiedChecklist();
+        return $this->summaryFromChecklist($this->unifiedChecklist());
+    }
+
+    /**
+     * @param  list<array{key: string, label: string, ok: bool, hint: ?string, optional: bool, group: string}>  $items
+     * @return array{
+     *     ready: bool,
+     *     production_active: bool,
+     *     mode: string,
+     *     mode_label: string,
+     *     ok: int,
+     *     total: int,
+     *     optional_pending: int,
+     *     dashboard_url: string
+     * }
+     */
+    public function summaryFromChecklist(array $items): array
+    {
         $required = collect($items)->reject(fn (array $i): bool => $i['optional']);
 
         return [
-            'ready'              => $this->canSwitchToProduction(),
-            'production_active'  => $this->isProductionActive(),
+            'ready'              => $required->every(fn (array $item): bool => $item['ok']),
+            'production_active'  => ! $this->runtime->isStub()
+                && $this->runtime->isStripeProduction()
+                && $this->preflight->isReady(),
             'mode'               => $this->runtime->modeKind(),
             'mode_label'         => $this->runtime->modeDisplayLabel(),
             'ok'                 => $required->where('ok', true)->count(),

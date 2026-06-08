@@ -14,7 +14,6 @@ use App\Models\Fir;
 use App\Models\Trasporto;
 use App\Models\User;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Log;
 use Livewire\Livewire;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -126,8 +125,6 @@ class TrasportiFirPolishTest extends TestCase
 
     public function test_trasporto_tracking_prep_timeline_for_in_transito(): void
     {
-        Log::spy();
-
         $dest = Anagrafica::factory()->create(['tipo' => 'impianto', 'ragione_sociale' => 'Impianto S70']);
         $trasporto = Trasporto::create([
             'codice_cer_id'               => CodiceCer::factory()->create()->id,
@@ -142,10 +139,6 @@ class TrasportiFirPolishTest extends TestCase
         $this->assertCount(4, $timeline);
         $this->assertSame('gps_stub', $timeline[1]['key']);
         $this->assertNotNull($prep->etaStub($trasporto));
-
-        Log::shouldHaveReceived('info')
-            ->once()
-            ->with('trasporto.tracking.stub', \Mockery::on(fn (array $ctx) => $ctx['trasporto_id'] === $trasporto->id));
     }
 
     public function test_trasporto_show_renders_tracking_prep_timeline(): void

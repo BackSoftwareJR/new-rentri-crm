@@ -24,6 +24,11 @@ class TrasportoPolicy
         return true;
     }
 
+    public function create(User $user): bool
+    {
+        return true;
+    }
+
     public function view(User $user, Trasporto $trasporto): bool
     {
         return $this->demoScopeAllows($trasporto);

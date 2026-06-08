@@ -13,6 +13,7 @@ class DatabaseSeeder extends Seeder
             RolePermissionSeeder::class,
             CodiceCerSeeder::class,
             RentriSettingSeeder::class,
+            SitoSeeder::class,
             DemoDataSeeder::class,
             BonificaTestSeeder::class,
         ]);

@@ -73,6 +73,12 @@ return [
         'notify_email' => env('BONIFICA_NOTIFY_EMAIL', 'segreteria@example.com'),
     ],
 
+    'sdi' => [
+        'stub'       => filter_var(env('SDI_STUB', true), FILTER_VALIDATE_BOOL),
+        'submit_url' => env('SDI_SUBMIT_URL'),
+        'timeout'    => (int) env('SDI_TIMEOUT', 30),
+    ],
+
     'mud_telematico' => [
         'stub'               => filter_var(env('MUD_TELEMATICO_STUB', true), FILTER_VALIDATE_BOOL),
         'env'                => env('MUD_TELEMATICO_ENV', env('RENTRI_ENV', 'sandbox')),

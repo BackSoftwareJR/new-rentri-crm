@@ -84,7 +84,7 @@ class LogSensitiveDataMasker
             return $this->maskEmail($value);
         }
 
-        if (strlen($value) <= 8) {
+        if (mb_strlen($value) <= 8) {
             return '[REDACTED]';
         }
 
@@ -93,13 +93,13 @@ class LogSensitiveDataMasker
 
     private function partialMask(string $value): string
     {
-        $len = strlen($value);
+        $len = mb_strlen($value);
 
         if ($len <= 4) {
             return '****';
         }
 
-        return substr($value, 0, 4).'…'.substr($value, -2);
+        return mb_substr($value, 0, 4).'…'.mb_substr($value, -2);
     }
 
     private function maskEmail(string $email): string

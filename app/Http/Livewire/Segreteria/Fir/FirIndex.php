@@ -4,6 +4,7 @@ namespace App\Http\Livewire\Segreteria\Fir;
 
 use App\Domain\Rentri\RentriRuntimeModeService;
 use App\Domain\Fir\FirBulkExportService;
+use App\Domain\Fir\FirPdfGeneratorService;
 use App\Domain\Fir\FirService;
 use App\Http\Livewire\Segreteria\SegreteriaPage;
 use App\Models\Fir;
@@ -55,6 +56,14 @@ class FirIndex extends SegreteriaPage
     public function updatedSearch(): void
     {
         $this->resetPage();
+    }
+
+    public function downloadFirPdf(int $firId, FirPdfGeneratorService $pdfGenerator): StreamedResponse
+    {
+        $fir = Fir::findOrFail($firId);
+        $this->authorize('view', $fir);
+
+        return $pdfGenerator->download($fir);
     }
 
     public function exportBulkCsv(FirBulkExportService $export): StreamedResponse

@@ -2,7 +2,17 @@
     <p class="op-section-lead">Seleziona un veicolo da bonificare.</p>
 
     <div class="op-bn-filters">
-        @foreach (['tutti' => 'Tutti', 'scaduti' => 'Scaduti', 'in_tempo' => 'In tempo', 'dopo_pericolosi' => 'Pericolosi OK'] as $key => $label)
+        <button type="button"
+            wire:click="$set('soloAssegnati', true)"
+            class="op-bn-filter {{ $soloAssegnati ? 'op-bn-filter--active' : '' }}">
+            Assegnati a me
+        </button>
+        <button type="button"
+            wire:click="$set('soloAssegnati', false)"
+            class="op-bn-filter {{ ! $soloAssegnati ? 'op-bn-filter--active' : '' }}">
+            Tutti
+        </button>
+        @foreach (['tutti' => 'Tutti stati', 'scaduti' => 'Scaduti', 'in_tempo' => 'In tempo', 'dopo_pericolosi' => 'Pericolosi OK'] as $key => $label)
             <button type="button"
                 wire:click="$set('filtro', '{{ $key }}')"
                 class="op-bn-filter {{ $filtro === $key ? 'op-bn-filter--active' : '' }}">
@@ -11,14 +21,20 @@
         @endforeach
     </div>
 
-    <div class="op-bn-search-wrap">
-        <input type="search" wire:model.live.debounce.300ms="search" class="op-bn-search" placeholder="Cerca targa o veicolo…" autocomplete="off" aria-label="Cerca veicolo da bonificare" />
+    <div class="op-bn-search-wrap" style="display:flex;gap:8px;align-items:center;">
+        <input type="search" wire:model.live.debounce.300ms="search" class="op-bn-search" placeholder="Cerca targa o veicolo…" autocomplete="off" aria-label="Cerca veicolo da bonificare" style="flex:1;" />
+        <x-barcode-scanner
+            target="bonifica"
+            button-label="Scansiona targa"
+            button-class="op-btn op-btn-secondary"
+            x-on:scanner-result.window="if ($event.detail.target === 'bonifica') $wire.selectFromScan($event.detail.value)"
+        />
     </div>
 
     @if ($veicoli->isEmpty())
         <x-empty-state
-            :title="$search !== '' || $filtro !== 'tutti' ? 'Nessun veicolo trovato' : 'Nessun veicolo in bonifica'"
-            :description="$search !== '' || $filtro !== 'tutti' ? 'Prova a modificare filtri o ricerca.' : 'Tutti i veicoli accettati sono stati bonificati o non sono ancora in attesa.'"
+            :title="$search !== '' || $filtro !== 'tutti' || ! $soloAssegnati ? 'Nessun veicolo trovato' : 'Nessun veicolo in bonifica'"
+            :description="$search !== '' || $filtro !== 'tutti' || ! $soloAssegnati ? 'Prova a modificare filtri o ricerca.' : 'Tutti i veicoli accettati sono stati bonificati o non sono ancora in attesa.'"
         />
     @else
         <div class="op-bn-list">
@@ -74,5 +90,11 @@
                 </a>
             @endforeach
         </div>
+
+        @if ($veicoli->hasPages())
+            <div class="op-pagination-wrap" style="margin-top: 1rem;">
+                {{ $veicoli->links() }}
+            </div>
+        @endif
     @endif
 </div>

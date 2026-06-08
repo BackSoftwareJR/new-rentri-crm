@@ -4,6 +4,7 @@ namespace App\Http\Livewire\Operatore;
 
 use App\Domain\Operatore\OperatoreProfiloService;
 use App\Models\User;
+use App\Services\Push\WebPushService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Livewire\Attributes\Title;
@@ -27,6 +28,28 @@ class Profilo extends OperatorePage
         $this->email = $user->email;
     }
 
+    public function subscribePush(WebPushService $push, string $subscriptionJson, ?string $deviceName = null): void
+    {
+        /** @var User $user */
+        $user = auth()->user();
+        $this->authorize('updateProfile', $user);
+
+        $data = json_decode($subscriptionJson, true);
+
+        if (! is_array($data) || empty($data['endpoint']) || empty($data['keys'])) {
+            $this->addError('push', 'Dati sottoscrizione push non validi.');
+
+            return;
+        }
+
+        if ($deviceName !== null && $deviceName !== '') {
+            $data['device_name'] = $deviceName;
+        }
+
+        $push->subscribe($user, $data);
+        session()->flash('success', 'Notifiche push attivate su questo dispositivo.');
+    }
+
     public function salva(OperatoreProfiloService $profilo): void
     {
         /** @var User $user */
@@ -48,11 +71,14 @@ class Profilo extends OperatorePage
         session()->flash('success', 'Profilo aggiornato.');
     }
 
-    public function render(): View
+    public function render(WebPushService $push): View
     {
         return $this->operatoreView(
             'livewire.operatore.profilo',
-            [],
+            [
+                'pushEnabled' => $push->publicKey() !== null,
+                'vapidPublicKey' => $push->publicKey(),
+            ],
             'profilo',
             'Profilo',
         );

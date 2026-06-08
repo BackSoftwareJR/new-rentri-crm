@@ -88,8 +88,8 @@ class EcommerceCompletoTest extends TestCase
 
         Livewire::actingAs($user)
             ->test(EcommerceOrdineShow::class, ['ordine' => $ordine])
-            ->assertSee('Checkout sicuro')
-            ->assertSee('Avvia checkout')
+            ->assertSee('Checkout')
+            ->assertSee('Conferma e avvia checkout')
             ->call('avviaCheckout')
             ->assertHasNoErrors()
             ->assertSee('Pagamento in attesa');

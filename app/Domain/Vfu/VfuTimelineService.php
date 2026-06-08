@@ -60,7 +60,8 @@ final class VfuTimelineService
                 'key'  => 'chiusura',
                 'label'=> 'Chiusura pratica',
                 'rank' => 6,
-                'date' => $vfu->data_invio_agenzia?->format('d/m/Y H:i'),
+                'date' => $vfu->rottamato_at?->format('d/m/Y H:i')
+                    ?? $vfu->data_invio_agenzia?->format('d/m/Y H:i'),
                 'hint' => 'Invio agenzia o rottamazione',
             ],
         ];
@@ -92,6 +93,8 @@ final class VfuTimelineService
             VfuStato::AttesaBonifica                  => 3,
             VfuStato::InBonifica                      => 4,
             VfuStato::Bonificato                      => 5,
+            VfuStato::InSmontaggio                    => 6,
+            VfuStato::Smontato                        => 6,
             VfuStato::InviatoAgenzia                  => 6,
             VfuStato::Rottamato                       => 7,
             VfuStato::Annullato                       => -1,
@@ -105,6 +108,8 @@ final class VfuTimelineService
             VfuStato::Accettato                       => 'accettazione',
             VfuStato::AttesaBonifica, VfuStato::InBonifica => 'bonifica',
             VfuStato::Bonificato                      => 'bonificato',
+            VfuStato::InSmontaggio                    => 'bonificato',
+            VfuStato::Smontato                        => 'chiusura',
             VfuStato::InviatoAgenzia, VfuStato::Rottamato => 'chiusura',
             VfuStato::Annullato                       => 'annullato',
         };
