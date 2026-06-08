@@ -48,6 +48,37 @@ ln -sfn new-rentri-crm/public public_html
 
 In questo caso **non** serve `index.php` custom — usa quello standard di Laravel.
 
+## PHP CLI vs hPanel (IMPORTANTE)
+
+Su Hostinger, cambiare PHP in hPanel aggiorna **solo il browser**, non la shell SSH.
+`php -v` in SSH può restare 8.2 anche se il sito usa 8.4.
+
+**Verifica e usa PHP 8.4 in SSH:**
+
+```bash
+php -v                                          # spesso ancora 8.2
+/opt/alt/php84/usr/bin/php -v                   # deve essere 8.4.x
+
+# Rendi permanente (consigliato)
+echo 'export PATH="/opt/alt/php84/usr/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+php -v                                          # ora 8.4
+```
+
+**Composer su Hostinger:** usa `composer2` con PHP 8.4:
+
+```bash
+/opt/alt/php84/usr/bin/php /usr/local/bin/composer2 install --no-dev --optimize-autoloader
+```
+
+Oppure, dopo `source ~/.bashrc`:
+
+```bash
+composer2 install --no-dev --optimize-autoloader
+```
+
+> Non usare `--ignore-platform-reqs`: maschera il problema senza risolverlo.
+
 ## Setup iniziale (SSH)
 
 ```bash
@@ -57,11 +88,14 @@ cd ~/domains/demolisci.backsoftware.it
 git clone -b staging https://github.com/BackSoftwareJR/new-rentri-crm.git new-rentri-crm
 cd new-rentri-crm
 
-# 2. .env produzione (copia dal Mac o nano)
+# 2. PHP 8.4 CLI
+export PATH="/opt/alt/php84/usr/bin:$PATH"
+
+# 3. .env produzione (copia dal Mac o nano)
 nano .env
 
-# 3. Dipendenze + Laravel
-composer install --no-dev --optimize-autoloader
+# 4. Dipendenze + Laravel
+composer2 install --no-dev --optimize-autoloader
 php artisan key:generate --force
 php artisan migrate --force
 php artisan db:seed --class=RolePermissionSeeder --force
@@ -79,9 +113,10 @@ bash new-rentri-crm/deploy/hostinger/setup-public_html.sh
 ## Aggiornamenti (deploy successivi)
 
 ```bash
+export PATH="/opt/alt/php84/usr/bin:$PATH"
 cd ~/domains/demolisci.backsoftware.it/new-rentri-crm
 git pull origin staging
-composer install --no-dev --optimize-autoloader
+composer2 install --no-dev --optimize-autoloader
 npm ci && npm run build   # oppure upload public/build
 php artisan migrate --force
 php artisan config:cache && php artisan route:cache && php artisan view:cache
