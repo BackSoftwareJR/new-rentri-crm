@@ -14,6 +14,7 @@
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
+    @stack('styles')
     @stack('head-extras')
 </head>
 <body class="segreteria-layout" data-seg-layout="segreteria">

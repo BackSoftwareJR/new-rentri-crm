@@ -1,5 +1,10 @@
 <div x-data="{ mobileTab: false }" class="sh-wrapper">
 
+    <div class="seg-page-header">
+        <h1>Impostazioni</h1>
+        <p>Configura dati azienda, RENTRI, pagamenti, email e sistema.</p>
+    </div>
+
     {{-- ── Flash messages ──────────────────────────────────────────────────── --}}
     @if (session('success'))
         <div class="sh-toast sh-toast--success" role="status" x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 4000)"
@@ -418,7 +423,7 @@
                                 </label>
                             </div>
 
-                            <div class="sh-toggle-row" style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--sh-border);">
+                            <div class="sh-toggle-row" style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--color-border-light);">
                                 <div>
                                     <span class="sh-field-label">Dispute stub mode</span>
                                     <p class="sh-field-hint">In stub mode le dispute non vengono processate; utile in sviluppo.</p>
@@ -521,7 +526,7 @@
                                 </div>
                             </div>
 
-                            <div class="sh-grid sh-grid--2" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--sh-border);">
+                            <div class="sh-grid sh-grid--2" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--color-border-light);">
                                 <div class="sh-field">
                                     <label class="sh-field-label" for="mail-from-name">Nome mittente</label>
                                     <input id="mail-from-name" type="text" wire:model="mail_from_name" class="sh-input" placeholder="ERP VFU">
@@ -689,7 +694,7 @@
 
                         {{-- Future integrations placeholder --}}
                         <div class="sh-card sh-card--future">
-                            <h3 class="sh-card-title" style="color: var(--sh-text-muted);">Integrazioni future</h3>
+                            <h3 class="sh-card-title" style="color: var(--color-text-secondary);">Integrazioni future</h3>
                             <div class="sh-future-list">
                                 <div class="sh-future-item">
                                     <span class="sh-badge sh-badge--gray">Presto</span>
@@ -787,7 +792,7 @@
                                 </label>
                             </div>
 
-                            <div class="sh-toggle-row" style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--sh-border);">
+                            <div class="sh-toggle-row" style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--color-border-light);">
                                 <div>
                                     <span class="sh-field-label">APP_DEBUG</span>
                                     <p class="sh-field-hint">Mostra stack trace e dettagli errore. In produzione deve essere <strong>disattivato</strong>.</p>
@@ -806,7 +811,7 @@
                                 </div>
                             @endif
 
-                            <div class="sh-field" style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--sh-border);">
+                            <div class="sh-field" style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--color-border-light);">
                                 <label class="sh-field-label" for="log-level">Log level</label>
                                 <select id="log-level" wire:model="log_level" class="sh-input sh-select">
                                     @foreach (['debug', 'info', 'notice', 'warning', 'error', 'critical', 'alert', 'emergency'] as $level)
@@ -876,354 +881,3 @@
         </main>
     </div>
 </div>
-
-{{-- ══════════════════════════════════════════════════════════════════════════
-     Scoped CSS (premium Apple-inspired design)
-═══════════════════════════════════════════════════════════════════════════ --}}
-@push('styles')
-<style>
-:root {
-    --sh-bg:        #f5f5f7;
-    --sh-surface:   #ffffff;
-    --sh-border:    #e5e5ea;
-    --sh-text:      #1d1d1f;
-    --sh-text-muted: #6e6e73;
-    --sh-accent:    #0071e3;
-    --sh-accent-hover: #0077ed;
-    --sh-green:     #34c759;
-    --sh-yellow:    #ff9f0a;
-    --sh-red:       #ff3b30;
-    --sh-radius:    12px;
-    --sh-radius-sm: 8px;
-    --sh-shadow:    0 1px 3px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.04);
-    --sh-shadow-md: 0 4px 24px rgba(0,0,0,.10);
-    --sh-font:      -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif;
-}
-
-.sh-wrapper {
-    font-family: var(--sh-font);
-    color: var(--sh-text);
-    padding: 2rem 0;
-    position: relative;
-}
-
-/* ─── Toast ─────────────────────────────────────────────────────────── */
-.sh-toast {
-    position: fixed;
-    top: 1.25rem;
-    right: 1.25rem;
-    z-index: 9999;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.25rem;
-    border-radius: var(--sh-radius-sm);
-    font-size: 0.875rem;
-    font-weight: 500;
-    box-shadow: var(--sh-shadow-md);
-    transition: opacity 0.4s ease;
-    max-width: 400px;
-}
-.sh-toast--success { background: #f0fdf4; border: 1px solid #86efac; color: #166534; }
-.sh-toast--error   { background: #fef2f2; border: 1px solid #fca5a5; color: #991b1b; }
-.sh-toast-leave    { transition: opacity 0.4s ease; }
-.opacity-0         { opacity: 0; }
-.opacity-1         { opacity: 1; }
-
-/* ─── Layout ─────────────────────────────────────────────────────────── */
-.sh-layout {
-    display: grid;
-    grid-template-columns: 220px 1fr;
-    gap: 2rem;
-    align-items: start;
-}
-@media (max-width: 768px) {
-    .sh-layout { grid-template-columns: 1fr; gap: 1rem; }
-}
-
-/* ─── Side nav ────────────────────────────────────────────────────────── */
-.sh-sidenav {
-    background: var(--sh-surface);
-    border: 1px solid var(--sh-border);
-    border-radius: var(--sh-radius);
-    box-shadow: var(--sh-shadow);
-    overflow: hidden;
-    position: sticky;
-    top: 1.5rem;
-}
-
-.sh-sidenav-list {
-    list-style: none;
-    margin: 0;
-    padding: 0.5rem;
-}
-
-.sh-mobile-tab-toggle {
-    display: none;
-    width: 100%;
-    padding: 0.875rem 1rem;
-    background: none;
-    border: none;
-    border-bottom: 1px solid var(--sh-border);
-    font-family: var(--sh-font);
-    font-size: 0.9375rem;
-    font-weight: 600;
-    color: var(--sh-text);
-    cursor: pointer;
-    text-align: left;
-    justify-content: space-between;
-    align-items: center;
-}
-@media (max-width: 768px) {
-    .sh-mobile-tab-toggle { display: flex; }
-    .sh-sidenav-list { display: none; }
-    .sh-sidenav-list--open { display: block; }
-}
-
-.sh-sidenav-item {
-    display: flex;
-    align-items: center;
-    gap: 0.625rem;
-    width: 100%;
-    padding: 0.625rem 0.875rem;
-    border-radius: var(--sh-radius-sm);
-    border: none;
-    background: none;
-    font-family: var(--sh-font);
-    font-size: 0.9rem;
-    font-weight: 500;
-    color: var(--sh-text-muted);
-    cursor: pointer;
-    text-align: left;
-    transition: background 0.15s, color 0.15s;
-}
-.sh-sidenav-item:hover {
-    background: var(--sh-bg);
-    color: var(--sh-text);
-}
-.sh-sidenav-item--active {
-    background: rgba(0,113,227,.08);
-    color: var(--sh-accent);
-    font-weight: 600;
-}
-.sh-sidenav-item--active svg { stroke: var(--sh-accent); }
-
-/* ─── Content ────────────────────────────────────────────────────────── */
-.sh-content { min-width: 0; }
-
-.sh-section-header { margin-bottom: 1.5rem; }
-.sh-section-title  { font-size: 1.375rem; font-weight: 700; margin: 0 0 0.25rem; letter-spacing: -0.02em; }
-.sh-section-desc   { font-size: 0.9375rem; color: var(--sh-text-muted); margin: 0; }
-
-/* ─── Cards ──────────────────────────────────────────────────────────── */
-.sh-card {
-    background: var(--sh-surface);
-    border: 1px solid var(--sh-border);
-    border-radius: var(--sh-radius);
-    box-shadow: var(--sh-shadow);
-    padding: 1.375rem 1.5rem;
-    margin-bottom: 1.25rem;
-}
-.sh-card-title { font-size: 1.0625rem; font-weight: 600; margin: 0 0 1rem; color: var(--sh-text); }
-.sh-card--logo  { display: flex; flex-direction: column; gap: 0.75rem; }
-.sh-card--inset { background: #fafaf9; border-style: dashed; }
-.sh-card--future { opacity: 0.7; }
-.sh-card--status-bar { padding: 1rem 1.5rem; }
-
-/* ─── Status bar ─────────────────────────────────────────────────────── */
-.sh-status-items { display: flex; flex-wrap: wrap; gap: 1.5rem; }
-.sh-status-item  { display: flex; flex-direction: column; gap: 0.25rem; }
-.sh-status-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--sh-text-muted); }
-.sh-status-time  { font-size: 0.75rem; color: var(--sh-text-muted); }
-
-/* ─── Badges ─────────────────────────────────────────────────────────── */
-.sh-badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.2em 0.65em;
-    border-radius: 100px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-}
-.sh-badge--green  { background: #dcfce7; color: #166534; }
-.sh-badge--yellow { background: #fef9c3; color: #854d0e; }
-.sh-badge--red    { background: #fee2e2; color: #991b1b; }
-.sh-badge--blue   { background: #dbeafe; color: #1e40af; }
-.sh-badge--gray   { background: #f1f5f9; color: #64748b; }
-
-/* ─── Form elements ──────────────────────────────────────────────────── */
-.sh-form { display: flex; flex-direction: column; }
-.sh-grid { display: grid; gap: 1rem; }
-.sh-grid--1    { grid-template-columns: 1fr; }
-.sh-grid--2    { grid-template-columns: 1fr 1fr; }
-.sh-grid--3    { grid-template-columns: 1fr 1fr 1fr; }
-.sh-grid--full { grid-template-columns: 1fr; }
-@media (max-width: 600px) {
-    .sh-grid--2, .sh-grid--3 { grid-template-columns: 1fr; }
-}
-.sh-field { display: flex; flex-direction: column; gap: 0.3rem; }
-.sh-field-label { font-size: 0.875rem; font-weight: 600; color: var(--sh-text); }
-.sh-field-hint  { font-size: 0.8125rem; color: var(--sh-text-muted); margin: 0.15rem 0 0; }
-.sh-field-error { font-size: 0.8125rem; color: var(--sh-red); margin: 0.15rem 0 0; }
-
-.sh-input {
-    height: 2.5rem;
-    padding: 0 0.875rem;
-    border: 1.5px solid var(--sh-border);
-    border-radius: var(--sh-radius-sm);
-    font-family: var(--sh-font);
-    font-size: 0.9375rem;
-    color: var(--sh-text);
-    background: var(--sh-surface);
-    outline: none;
-    transition: border-color 0.15s, box-shadow 0.15s;
-    width: 100%;
-    box-sizing: border-box;
-}
-.sh-input:focus {
-    border-color: var(--sh-accent);
-    box-shadow: 0 0 0 3px rgba(0,113,227,.12);
-}
-.sh-input--masked { color: var(--sh-text-muted); letter-spacing: 0.1em; font-size: 0.875rem; }
-.sh-input--readonly { background: var(--sh-bg); color: var(--sh-text-muted); }
-.sh-select { appearance: none; cursor: pointer; }
-
-.sh-secret-field, .sh-copy-field { display: flex; gap: 0.5rem; align-items: center; }
-.sh-secret-field .sh-input, .sh-copy-field .sh-input { flex: 1; }
-
-.sh-file-input { display: none; }
-
-/* ─── Logo area ──────────────────────────────────────────────────────── */
-.sh-logo-area    { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
-.sh-logo-preview { max-height: 64px; max-width: 180px; object-fit: contain; border-radius: 8px; border: 1px solid var(--sh-border); }
-.sh-logo-placeholder {
-    width: 80px; height: 64px;
-    background: var(--sh-bg);
-    border: 1.5px dashed var(--sh-border);
-    border-radius: 8px;
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
-    color: var(--sh-text-muted); font-size: 0.75rem;
-}
-
-/* ─── Toggle switch ──────────────────────────────────────────────────── */
-.sh-toggle-row  { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
-.sh-toggle      { display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer; user-select: none; }
-.sh-toggle input { display: none; }
-.sh-toggle-track {
-    position: relative;
-    width: 44px; height: 26px;
-    background: #d1d1d6;
-    border-radius: 100px;
-    transition: background 0.2s;
-    flex-shrink: 0;
-}
-.sh-toggle-track::after {
-    content: '';
-    position: absolute;
-    top: 3px; left: 3px;
-    width: 20px; height: 20px;
-    background: #fff;
-    border-radius: 50%;
-    box-shadow: 0 1px 4px rgba(0,0,0,.2);
-    transition: transform 0.2s;
-}
-.sh-toggle input:checked ~ .sh-toggle-track { background: var(--sh-green); }
-.sh-toggle input:checked ~ .sh-toggle-track::after { transform: translateX(18px); }
-.sh-toggle-label { font-size: 0.875rem; font-weight: 500; color: var(--sh-text-muted); min-width: 2.5rem; }
-.sh-toggle--sm .sh-toggle-track { width: 36px; height: 22px; }
-.sh-toggle--sm .sh-toggle-track::after { width: 16px; height: 16px; }
-.sh-toggle--sm input:checked ~ .sh-toggle-track::after { transform: translateX(14px); }
-
-/* ─── Buttons ────────────────────────────────────────────────────────── */
-.sh-btn {
-    display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
-    height: 2.25rem; padding: 0 1rem;
-    border: none; border-radius: var(--sh-radius-sm);
-    font-family: var(--sh-font); font-size: 0.9rem; font-weight: 600;
-    cursor: pointer; text-decoration: none; white-space: nowrap;
-    transition: background 0.15s, opacity 0.15s;
-}
-.sh-btn--primary   { background: var(--sh-accent); color: #fff; }
-.sh-btn--primary:hover { background: var(--sh-accent-hover); }
-.sh-btn--secondary { background: #f1f1f1; color: var(--sh-text); border: 1px solid var(--sh-border); }
-.sh-btn--secondary:hover { background: #e8e8e8; }
-.sh-btn--ghost { background: none; color: var(--sh-text-muted); }
-.sh-btn--ghost:hover { background: var(--sh-bg); color: var(--sh-text); }
-.sh-btn--danger { background: var(--sh-red); color: #fff; }
-.sh-btn--danger:hover { background: #e6352b; }
-.sh-btn--sm { height: 2rem; padding: 0 0.75rem; font-size: 0.8125rem; }
-.sh-btn[disabled], .sh-btn--loading { opacity: 0.6; cursor: not-allowed; }
-
-.sh-form-footer {
-    display: flex;
-    justify-content: flex-start;
-    gap: 0.75rem;
-    padding-top: 0.25rem;
-}
-
-/* ─── Action row ─────────────────────────────────────────────────────── */
-.sh-action-row { display: flex; flex-wrap: wrap; gap: 0.75rem; }
-.sh-action-row--wrap { flex-direction: column; align-items: flex-start; }
-
-/* ─── Alerts ─────────────────────────────────────────────────────────── */
-.sh-alert {
-    display: flex; align-items: flex-start; gap: 0.6rem;
-    padding: 0.75rem 1rem;
-    border-radius: var(--sh-radius-sm);
-    font-size: 0.875rem;
-    border: 1px solid;
-}
-.sh-alert--success { background: #f0fdf4; border-color: #86efac; color: #166534; }
-.sh-alert--warning { background: #fffbeb; border-color: #fcd34d; color: #92400e; }
-.sh-alert--danger  { background: #fef2f2; border-color: #fca5a5; color: #991b1b; }
-
-/* ─── Check list ─────────────────────────────────────────────────────── */
-.sh-check-list { display: flex; flex-direction: column; gap: 0.75rem; }
-.sh-check-item {
-    display: flex; align-items: flex-start; gap: 0.75rem;
-    cursor: pointer; padding: 0.75rem; border-radius: var(--sh-radius-sm);
-    border: 1.5px solid var(--sh-border);
-    transition: border-color 0.15s, background 0.15s;
-}
-.sh-check-item:has(input:checked) { border-color: var(--sh-accent); background: rgba(0,113,227,.04); }
-.sh-check-item input { width: 1rem; height: 1rem; margin-top: 0.1rem; flex-shrink: 0; accent-color: var(--sh-accent); }
-.sh-check-item span { display: flex; flex-direction: column; gap: 0.15rem; }
-
-/* ─── Event list (notifications) ─────────────────────────────────────── */
-.sh-event-list { list-style: none; padding: 0; margin: 1rem 0 0; }
-.sh-event-item {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 0.75rem 0;
-    border-bottom: 1px solid var(--sh-border);
-}
-.sh-event-item:last-child { border-bottom: none; }
-.sh-event-item strong { display: block; font-size: 0.9rem; }
-.sh-text-sm   { font-size: 0.8125rem; }
-.sh-text-muted { color: var(--sh-text-muted); display: block; }
-
-/* ─── Inline form ────────────────────────────────────────────────────── */
-.sh-inline-form { display: flex; gap: 1rem; align-items: flex-start; flex-wrap: wrap; }
-
-/* ─── Info grid ──────────────────────────────────────────────────────── */
-.sh-info-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1rem; }
-.sh-info-item { display: flex; flex-direction: column; gap: 0.35rem; }
-.sh-info-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--sh-text-muted); }
-.sh-code { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.8125rem; background: var(--sh-bg); padding: 0.2em 0.5em; border-radius: 4px; }
-
-/* ─── Future integrations ────────────────────────────────────────────── */
-.sh-future-list { display: flex; flex-direction: column; gap: 1rem; margin-top: 0.25rem; }
-.sh-future-item { display: flex; align-items: flex-start; gap: 0.875rem; }
-
-/* ─── Inset card header ──────────────────────────────────────────────── */
-.sh-inset-header { display: flex; align-items: center; gap: 0.625rem; margin-bottom: 0.5rem; }
-
-/* ─── Confirm inline ─────────────────────────────────────────────────── */
-.sh-confirm-inline {
-    display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem;
-    padding: 0.875rem 1rem;
-    background: #fef2f2; border: 1px solid #fca5a5; border-radius: var(--sh-radius-sm);
-    font-size: 0.875rem; color: #991b1b;
-}
-</style>
-@endpush
