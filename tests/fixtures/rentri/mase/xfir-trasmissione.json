@@ -1,0 +1,37 @@
+{
+  "endpoint": "POST /vidimazione-formulari/v1.0/xfir/trasmissione",
+  "required": [
+    "identificativo",
+    "num_iscr_sito",
+    "numero_fir",
+    "codice_blocco",
+    "progressivo",
+    "typ",
+    "payload_firmato"
+  ],
+  "properties": {
+    "identificativo": "string",
+    "num_iscr_sito": "string",
+    "numero_fir": "string",
+    "codice_blocco": "string",
+    "progressivo": "integer",
+    "typ": "string",
+    "payload_firmato": "object"
+  },
+  "typ_enum": ["COSE_Sign1"],
+  "example": {
+    "identificativo": "RSSMRA80A01H501Z",
+    "num_iscr_sito": "OP12345678901-PD00001",
+    "numero_fir": "OP12345678901-PD00001-BLK-MASE-01-0001",
+    "codice_blocco": "BLK-MASE-01",
+    "progressivo": 1,
+    "typ": "COSE_Sign1",
+    "payload_firmato": {
+      "typ": "COSE_Sign1",
+      "alg": "STUB-HMAC-SHA256",
+      "protected": "eyJhbGciOiJTVFVILUhNQUMtU0hBMjU2IiwidHlwIjoiQ09TRV9TaWduMSJ9",
+      "payload": "eyJ0ZXN0Ijp0cnVlfQ",
+      "signature": "stub:xfir-mase-fixture"
+    }
+  }
+}

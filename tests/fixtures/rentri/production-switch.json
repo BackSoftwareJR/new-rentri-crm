@@ -1,0 +1,15 @@
+{
+  "sprint": 106,
+  "env_required": {
+    "RENTRI_ENV": "production",
+    "RENTRI_API_STUB": false,
+    "RENTRI_FIRMA_STUB": false
+  },
+  "cli": "rentri:production-switch-check --dry-run",
+  "runbook": "docs/RENTRI-PRODUCTION-SWITCH-RUNBOOK.md",
+  "monitor_hours": 48,
+  "rollback_env": {
+    "RENTRI_API_STUB": true,
+    "RENTRI_FIRMA_STUB": true
+  }
+}

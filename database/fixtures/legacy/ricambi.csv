@@ -1,0 +1,4 @@
+legacy_id,codice,nome,descrizione,categoria,prezzo,giacenza,targa_vfu
+LEG-R-4001,RIC-LM001,Motore 1.2 8V,Motore usato testato,motore,450.00,2,
+LEG-R-4002,RIC-AS002,Alternatore,Alternatore ricondizionato,elettronica,85.50,5,
+LEG-R-4003,RIC-PT003,Paraurti anteriore,Paraurti Panda,carrozzeria,120.00,1,

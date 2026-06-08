@@ -1,0 +1,47 @@
+{
+    "endpoint": "POST /mud/v1.0/dichiarazioni/trasmissione",
+    "description": "Contratto invio telematico MUD async — gateway RENTRI-aligned (Sprint 101)",
+    "research_note": "Presentazione manuale ufficiale via https://www.mudtelematico.it (SPID). Integrazione CRM usa demoapi.rentri.gov.it / api.rentri.gov.it con pattern async analogo a registro RENTRI.",
+    "environments": {
+        "sandbox": {
+            "base_url": "https://demoapi.rentri.gov.it",
+            "portal_url": "https://www.mudtelematico.it"
+        },
+        "production": {
+            "base_url": "https://api.rentri.gov.it",
+            "portal_url": "https://www.mudtelematico.it"
+        }
+    },
+    "async_flow": [
+        "POST /mud/v1.0/dichiarazioni/trasmissione → 202 transazione_id",
+        "GET /mud/v1.0/dichiarazioni/{id}/status → COMPLETATA",
+        "GET /mud/v1.0/dichiarazioni/verifica/result?transazione_id={id} → protocollo"
+    ],
+    "mase_body_keys": [
+        "anno_riferimento",
+        "xml",
+        "xml_encoding",
+        "schema_version"
+    ],
+    "crm_excluded_keys": [
+        "dichiarazione_id",
+        "totali"
+    ],
+    "example_mase": {
+        "anno_riferimento": 2025,
+        "xml": "<base64 DichiarazioneMUD/>",
+        "xml_encoding": "base64",
+        "schema_version": "mud-stub-v1"
+    },
+    "example_crm_payload": {
+        "dichiarazione_id": 42,
+        "totali": {
+            "carichi_kg": 100,
+            "scarichi_kg": 20,
+            "saldo_kg": 80,
+            "codici_cer": 1
+        }
+    },
+    "stub_protocol_pattern": "MUD-STUB-{anno}-{hash8}",
+    "legacy_sprint95_path": "/mud-telematico/v1/invio"
+}

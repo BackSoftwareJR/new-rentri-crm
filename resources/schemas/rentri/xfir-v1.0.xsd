@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="https://www.rentri.gov.it/schema/xfir/v1.0"
+           xmlns:xfir="https://www.rentri.gov.it/schema/xfir/v1.0"
+           elementFormDefault="qualified">
+
+    <xs:element name="xfir" type="xfir:FormularioDigitaleType"/>
+
+    <xs:complexType name="FormularioDigitaleType">
+        <xs:sequence>
+            <xs:element name="versione" type="xfir:VersioneType"/>
+            <xs:element name="numero_fir" type="xfir:NonEmptyString"/>
+            <xs:element name="codice_blocco" type="xfir:NonEmptyString"/>
+            <xs:element name="progressivo" type="xs:positiveInteger"/>
+            <xs:element name="identificativo" type="xfir:NonEmptyString"/>
+            <xs:element name="num_iscr_sito" type="xfir:NonEmptyString"/>
+            <xs:element name="data_vidimazione" type="xs:date"/>
+            <xs:element name="peso_partenza_kg" type="xfir:PositiveDecimal" minOccurs="0"/>
+            <xs:element name="protocollo_rentri" type="xfir:NonEmptyString" minOccurs="0"/>
+            <xs:element name="transazione_id" type="xfir:NonEmptyString" minOccurs="0"/>
+            <xs:element name="qr_code" type="xfir:NonEmptyString" minOccurs="0"/>
+            <xs:element name="trasporto" type="xfir:TrasportoType"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="TrasportoType">
+        <xs:sequence>
+            <xs:element name="id" type="xs:positiveInteger" minOccurs="0"/>
+            <xs:element name="codice_cer" type="xfir:NonEmptyString"/>
+            <xs:element name="quantita_kg" type="xfir:PositiveDecimal"/>
+            <xs:element name="destinatario" type="xfir:NonEmptyString" minOccurs="0"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:simpleType name="VersioneType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="1.0"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="NonEmptyString">
+        <xs:restriction base="xs:string">
+            <xs:minLength value="1"/>
+            <xs:whiteSpace value="collapse"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="PositiveDecimal">
+        <xs:restriction base="xs:decimal">
+            <xs:minExclusive value="0"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+</xs:schema>

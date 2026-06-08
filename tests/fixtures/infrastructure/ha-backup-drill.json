@@ -1,0 +1,12 @@
+{
+  "sprint": 108,
+  "rpo_minutes": 60,
+  "rto_minutes": 240,
+  "session_driver_production": "redis",
+  "backup": {
+    "schedule_enabled": true,
+    "retention_days": 30,
+    "drill_interval_months": 3
+  },
+  "runbook": "docs/HA-BACKUP-DRILL-RUNBOOK.md"
+}

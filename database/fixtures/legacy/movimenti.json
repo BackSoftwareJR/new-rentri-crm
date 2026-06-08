@@ -1,0 +1,24 @@
+[
+  {
+    "legacy_id": "LEG-M-3001",
+    "tipo": "carico",
+    "codice_cer": "16.01.04",
+    "peso_kg": 120.5,
+    "data_movimento": "2024-05-10 09:30:00",
+    "note": "Carico manuale legacy"
+  },
+  {
+    "legacy_id": "LEG-M-3002",
+    "tipo": "scarico",
+    "codice_cer": "13.02.05*",
+    "peso_kg": 45.0,
+    "data_movimento": "2024-06-01 14:00:00"
+  },
+  {
+    "legacy_id": "LEG-M-3003",
+    "tipo": "carico",
+    "codice_cer": "16.01.04",
+    "peso_kg": 80.0,
+    "data_movimento": "2024-07-20 10:15:00"
+  }
+]

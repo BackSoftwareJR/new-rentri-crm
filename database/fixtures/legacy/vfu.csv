@@ -1,0 +1,4 @@
+legacy_id,targa,telaio,marca,modello,stato,peso_kg,proprietario,data_consegna
+LEG-V-2001,AB123CD,WVWZZZ1JZ3W386752,FIAT,Panda,accettato,950.50,Mario Rossi,2024-01-15
+LEG-V-2002,XY789ZZ,VF1RFA00061234567,RENAULT,Clio,attesa_bonifica,1100.00,Giulia Verdi,2024-02-20
+LEG-V-2003,CD456EF,ZFA31200001234567,FIAT,500,bozza,780.00,Paolo Neri,2024-03-01

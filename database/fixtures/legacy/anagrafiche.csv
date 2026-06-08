@@ -1,0 +1,4 @@
+tipo,ragione_sociale,piva,email,citta,legacy_id
+trasportatore,Trasporti Rossi Srl,12345678901,info@rossi.it,Milano,LEG-A-1001
+impianto,Impianto Verde SpA,98765432109,verde@impianto.it,Torino,LEG-A-1002
+privato,Mario Bianchi,,mario.bianchi@email.it,Roma,LEG-A-1003

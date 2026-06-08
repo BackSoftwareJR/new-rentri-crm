@@ -1,0 +1,33 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('magazzino_svuotamenti', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('codice_cer_id')->constrained('codici_cer')->cascadeOnDelete();
+            $table->foreignId('anagrafica_id')->nullable()->constrained('anagrafiche')->nullOnDelete();
+            $table->foreignId('trasportatore_anagrafica_id')->nullable()->constrained('anagrafiche')->nullOnDelete();
+            $table->boolean('trasportatore_omesso')->default(false);
+            $table->string('stato', 32)->default('richiesto');
+            $table->decimal('quantita_kg', 14, 4);
+            $table->decimal('quantita_impegnata_kg', 14, 4)->default(0);
+            $table->text('note_interne')->nullable();
+            $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->timestamps();
+
+            $table->index(['codice_cer_id', 'stato']);
+            $table->index('stato');
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('magazzino_svuotamenti');
+    }
+};

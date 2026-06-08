@@ -1,0 +1,14 @@
+{
+  "sprint": 107,
+  "horizon": {
+    "queue_connection": "redis",
+    "min_workers_production": 3,
+    "notifications_queue": true
+  },
+  "smtp": {
+    "notifications_live": true,
+    "rate_limit_per_minute_optional": 30,
+    "daily_cap_optional": 500
+  },
+  "runbook": "docs/HORIZON-SCALING-RUNBOOK.md"
+}

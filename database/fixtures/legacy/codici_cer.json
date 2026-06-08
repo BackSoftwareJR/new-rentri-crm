@@ -1,0 +1,18 @@
+[
+  {
+    "legacy_id": "LEG-CER-2001",
+    "codice": "16.01.04",
+    "descrizione": "Rifiuti ferrosi e non ferrosi (legacy stub)",
+    "categoria": "altro",
+    "um": "kg",
+    "limite_kg": 5000
+  },
+  {
+    "legacy_id": "LEG-CER-2002",
+    "codice": "13.02.05*",
+    "descrizione": "Oli minerali non clorurati (legacy stub)",
+    "categoria": "pericoloso",
+    "um": "kg",
+    "limite_kg": 1000
+  }
+]

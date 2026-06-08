@@ -1,0 +1,21 @@
+{
+  "sprint": 104,
+  "engagement": {
+    "environment": "staging",
+    "methodology": "OWASP Top 10 grey-box",
+    "window_days": 10
+  },
+  "in_scope_paths": [
+    "/login",
+    "/segreteria/*",
+    "/operatore/*",
+    "/admin/audit",
+    "/webhooks/stripe/ecommerce"
+  ],
+  "out_of_scope": [
+    "api.rentri.gov.it production",
+    "stripe sk_live charges",
+    "waf edge rules"
+  ],
+  "test_accounts_roles": ["admin", "segreteria", "operatore"]
+}

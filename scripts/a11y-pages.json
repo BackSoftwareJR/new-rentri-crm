@@ -1,0 +1,11 @@
+[
+  { "path": "/login", "name": "Login", "auth": false },
+  { "path": "/segreteria", "name": "Dashboard segreteria", "auth": "segreteria" },
+  { "path": "/segreteria/vfu", "name": "VFU index", "auth": "segreteria" },
+  { "path": "/segreteria/registro-movimenti", "name": "Registro movimenti", "auth": "segreteria" },
+  { "path": "/segreteria/rentri", "name": "RENTRI trasmissione", "auth": "segreteria" },
+  { "path": "/segreteria/impostazioni/rentri", "name": "Impostazioni RENTRI", "auth": "segreteria" },
+  { "path": "/segreteria/trasporti", "name": "Trasporti", "auth": "segreteria" },
+  { "path": "/operatore", "name": "Dashboard operatore", "auth": "operatore" },
+  { "path": "/operatore/bonifica", "name": "Bonifica wizard", "auth": "operatore" }
+]

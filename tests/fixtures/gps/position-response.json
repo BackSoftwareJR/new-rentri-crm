@@ -1,0 +1,45 @@
+{
+    "endpoint": "GET /trasporti/{id}/position",
+    "description": "Contratto posizione GPS provider — field map configurabile (Sprint 102)",
+    "canonical_shape": {
+        "latitude": "float",
+        "longitude": "float",
+        "recorded_at": "ISO8601 string",
+        "speed_kmh": "float optional"
+    },
+    "default_field_map": {
+        "latitude": "latitude",
+        "longitude": "longitude",
+        "recorded_at": "recorded_at",
+        "speed_kmh": "speed_kmh"
+    },
+    "provider_variants": {
+        "flat_default": {
+            "latitude": 45.464211,
+            "longitude": 9.191383,
+            "recorded_at": "2026-06-04T14:30:00+02:00",
+            "speed_kmh": 72.5
+        },
+        "nested_fleet": {
+            "vehicle_id": "VH-102",
+            "location": {
+                "lat": 45.12,
+                "lng": 9.45
+            },
+            "timestamp": "2026-06-04T14:30:00+02:00",
+            "speed": 80
+        }
+    },
+    "nested_field_map": {
+        "latitude": "location.lat",
+        "longitude": "location.lng",
+        "recorded_at": "timestamp",
+        "speed_kmh": "speed"
+    },
+    "example": {
+        "latitude": 45.464211,
+        "longitude": 9.191383,
+        "recorded_at": "2026-06-04T14:30:00+02:00",
+        "speed_kmh": 72.5
+    }
+}

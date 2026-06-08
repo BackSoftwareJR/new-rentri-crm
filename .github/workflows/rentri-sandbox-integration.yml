@@ -1,0 +1,99 @@
+name: RENTRI Sandbox Integration
+
+# Gated: mai su push default. Solo dispatch manuale o label PR integration-sandbox.
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [labeled]
+
+concurrency:
+  group: rentri-sandbox-integration-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  rentri-sandbox-integration:
+    name: RentriIntegrationTest (demoapi sandbox)
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'integration-sandbox')
+
+    env:
+      APP_ENV: testing
+      RENTRI_API_STUB: false
+      RENTRI_INTEGRATION_TEST: true
+
+    steps:
+      - name: Verify sandbox secrets configured
+        id: gate
+        env:
+          CERT_B64: ${{ secrets.RENTRI_SANDBOX_CERT_BASE64 }}
+          CERT_PASS: ${{ secrets.RENTRI_SANDBOX_CERT_PASSWORD }}
+        run: |
+          if [ -z "${CERT_B64}" ] || [ -z "${CERT_PASS}" ]; then
+            echo "configured=false" >> "${GITHUB_OUTPUT}"
+            echo "::notice title=RENTRI sandbox integration skipped::Repository secrets RENTRI_SANDBOX_CERT_BASE64 and RENTRI_SANDBOX_CERT_PASSWORD are not configured."
+          else
+            echo "configured=true" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: Skip — secrets not configured
+        if: steps.gate.outputs.configured != 'true'
+        run: |
+          echo "Skipping RentriIntegrationTest — configure repository secrets to enable live sandbox calls."
+
+      - name: Checkout
+        if: steps.gate.outputs.configured == 'true'
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        if: steps.gate.outputs.configured == 'true'
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite
+          coverage: none
+
+      - name: Install Composer dependencies
+        if: steps.gate.outputs.configured == 'true'
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Prepare application
+        if: steps.gate.outputs.configured == 'true'
+        run: |
+          cp .env.example .env
+          php artisan key:generate --ansi
+          {
+            echo "DB_CONNECTION=sqlite"
+            echo "DB_DATABASE=:memory:"
+            echo "RENTRI_API_STUB=false"
+            echo "RENTRI_INTEGRATION_TEST=true"
+          } >> .env
+
+      - name: Decode sandbox certificate to temp file
+        if: steps.gate.outputs.configured == 'true'
+        id: cert
+        env:
+          CERT_B64: ${{ secrets.RENTRI_SANDBOX_CERT_BASE64 }}
+        run: |
+          CERT_PATH="${RUNNER_TEMP}/rentri-sandbox-${GITHUB_RUN_ID}.p12"
+          printf '%s' "${CERT_B64}" | base64 -d > "${CERT_PATH}"
+          chmod 600 "${CERT_PATH}"
+          echo "path=${CERT_PATH}" >> "${GITHUB_OUTPUT}"
+          echo "RENTRI_SANDBOX_CERT_PATH=${CERT_PATH}" >> "${GITHUB_ENV}"
+
+      - name: Run RentriIntegrationTest
+        if: steps.gate.outputs.configured == 'true'
+        env:
+          RENTRI_SANDBOX_CERT_PASSWORD: ${{ secrets.RENTRI_SANDBOX_CERT_PASSWORD }}
+        run: php artisan test --filter=RentriIntegrationTest --ansi
+
+      - name: Cleanup sandbox certificate
+        if: always() && steps.gate.outputs.configured == 'true' && steps.cert.outputs.path != ''
+        run: |
+          if [ -f "${{ steps.cert.outputs.path }}" ]; then
+            rm -f "${{ steps.cert.outputs.path }}"
+          fi

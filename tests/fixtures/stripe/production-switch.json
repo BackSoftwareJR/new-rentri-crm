@@ -1,0 +1,24 @@
+{
+    "sprint": 117,
+    "description": "Contratto switch Stripe produzione e-commerce — reconciliation + dispute stub",
+    "env_required": {
+        "ECOMMERCE_PAYMENT_STUB": false,
+        "STRIPE_LIVE_MODE": true,
+        "STRIPE_KEY_PREFIX": "sk_live_",
+        "STRIPE_WEBHOOK_SECRET": "whsec_",
+        "STRIPE_CURRENCY": "eur"
+    },
+    "webhook_endpoint": "POST /webhooks/stripe/ecommerce",
+    "dispute_events": [
+        "charge.dispute.created",
+        "charge.dispute.updated",
+        "charge.dispute.closed"
+    ],
+    "reconciliation_statuses": [
+        "matched",
+        "crm_only",
+        "stripe_only",
+        "crm_pending"
+    ],
+    "artisan_command": "stripe:production-switch-check --dry-run"
+}

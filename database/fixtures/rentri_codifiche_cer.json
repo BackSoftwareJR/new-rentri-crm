@@ -1,0 +1,44 @@
+{
+  "items": [
+    {
+      "codice": "16.01.04*",
+      "descrizione": "Veicoli fuori uso contenenti fluidi o altri componenti pericolosi",
+      "pericoloso": true,
+      "um": "kg",
+      "rentri_ref": "RENTRI-CER-160104H",
+      "attivo": true
+    },
+    {
+      "codice": "16.01.04",
+      "descrizione": "Veicoli fuori uso privi di fluidi e componenti pericolosi",
+      "pericoloso": false,
+      "um": "kg",
+      "rentri_ref": "RENTRI-CER-160104",
+      "attivo": true
+    },
+    {
+      "codice": "16.01.07*",
+      "descrizione": "Filtri dell'olio usati",
+      "pericoloso": true,
+      "um": "kg",
+      "rentri_ref": "RENTRI-CER-160107H",
+      "attivo": true
+    },
+    {
+      "codice": "13.02.08*",
+      "descrizione": "Componenti pericolosi rimossi dai veicoli fuori uso",
+      "pericoloso": true,
+      "um": "kg",
+      "rentri_ref": "RENTRI-CER-130208H",
+      "attivo": true
+    },
+    {
+      "codice": "17.04.05",
+      "descrizione": "Rifiuti ferrosi e non ferrosi da autodemolizione",
+      "pericoloso": false,
+      "um": "kg",
+      "rentri_ref": "RENTRI-CER-170405",
+      "attivo": true
+    }
+  ]
+}

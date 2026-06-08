@@ -1,0 +1,25 @@
+{
+  "endpoint": "POST /vidimazione-formulari/v1.0/{codice_blocco}",
+  "path_params": ["codice_blocco"],
+  "required": ["num_iscr_sito"],
+  "optional": ["progressivo"],
+  "properties": {
+    "num_iscr_sito": "string",
+    "progressivo": "integer"
+  },
+  "crm_excluded_keys": ["trasporto_id", "codice_blocco"],
+  "example_mase": {
+    "num_iscr_sito": "OP12345678901-PD00001",
+    "progressivo": 1
+  },
+  "example_crm_payload": {
+    "num_iscr_sito": "OP12345678901-PD00001",
+    "progressivo": 1,
+    "codice_blocco": "BLK-MASE-01",
+    "trasporto_id": 42
+  },
+  "example": {
+    "num_iscr_sito": "OP12345678901-PD00001",
+    "progressivo": 1
+  }
+}

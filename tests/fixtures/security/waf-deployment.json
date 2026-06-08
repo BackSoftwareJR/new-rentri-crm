@@ -1,0 +1,12 @@
+{
+  "sprint": 105,
+  "modes": ["off", "monitor", "block"],
+  "monitor_hours_before_block": 48,
+  "protected_paths": [
+    "/login",
+    "/livewire/update",
+    "/webhooks/stripe/ecommerce",
+    "/admin/waf-status"
+  ],
+  "stripe_webhook_block": false
+}

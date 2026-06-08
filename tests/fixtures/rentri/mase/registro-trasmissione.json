@@ -1,0 +1,44 @@
+{
+  "endpoint": "POST /registro/v1.0/trasmissione",
+  "required": ["identificativo", "num_iscr_sito", "periodo_dal", "periodo_al", "movimenti"],
+  "properties": {
+    "identificativo": "string",
+    "num_iscr_sito": "string",
+    "periodo_dal": "date",
+    "periodo_al": "date",
+    "movimenti": "array"
+  },
+  "movimento": {
+    "required": ["codice_cer", "tipo_movimento", "quantita_kg", "data_movimento"],
+    "properties": {
+      "codice_cer": "string",
+      "tipo_movimento": "string",
+      "quantita_kg": "number",
+      "data_movimento": "date",
+      "riferimento_interno": "string|null"
+    },
+    "tipo_movimento_enum": ["CARICO", "SCARICO"]
+  },
+  "example": {
+    "identificativo": "RSSMRA80A01H501Z",
+    "num_iscr_sito": "OP12345678901-PD00001",
+    "periodo_dal": "2026-06-01",
+    "periodo_al": "2026-06-30",
+    "movimenti": [
+      {
+        "codice_cer": "16 01 04",
+        "tipo_movimento": "CARICO",
+        "quantita_kg": 120.5,
+        "data_movimento": "2026-06-02",
+        "riferimento_interno": "101"
+      },
+      {
+        "codice_cer": "16 01 04",
+        "tipo_movimento": "SCARICO",
+        "quantita_kg": 80,
+        "data_movimento": "2026-06-15",
+        "riferimento_interno": "102"
+      }
+    ]
+  }
+}

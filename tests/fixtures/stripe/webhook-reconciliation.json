@@ -1,0 +1,39 @@
+{
+    "webhook_endpoint": "POST /webhooks/stripe/ecommerce",
+    "description": "Contratto webhook Stripe e-commerce — idempotency Sprint 103",
+    "events_handled": [
+        "checkout.session.completed"
+    ],
+    "idempotency": {
+        "key": "event.id",
+        "storage": "stripe_webhook_events.stripe_event_id UNIQUE"
+    },
+    "reconciliation_fields": [
+        "checkout_session_id",
+        "amount_eur",
+        "environment",
+        "currency"
+    ],
+    "example_event": {
+        "id": "evt_s103_test",
+        "type": "checkout.session.completed",
+        "data": {
+            "object": {
+                "id": "cs_s103_test",
+                "amount_total": 2500,
+                "currency": "eur"
+            }
+        }
+    },
+    "environments": {
+        "sandbox": {
+            "stripe_key_prefix": "sk_test_",
+            "dashboard_url": "https://dashboard.stripe.com/test/"
+        },
+        "production": {
+            "stripe_key_prefix": "sk_live_",
+            "dashboard_url": "https://dashboard.stripe.com/",
+            "env_flag": "STRIPE_LIVE_MODE=true"
+        }
+    }
+}

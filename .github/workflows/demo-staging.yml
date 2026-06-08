@@ -1,0 +1,88 @@
+name: Demo Staging
+
+on:
+  push:
+    branches:
+      - demo
+      - 'feature/demo-*'
+  pull_request:
+    branches:
+      - demo
+  workflow_dispatch:
+
+concurrency:
+  group: demo-staging-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  demo-staging:
+    name: Bootstrap demo + preflight
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: rentri_crm_demo
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      APP_ENV: demo
+      APP_DEMO_MODE: true
+      RENTRI_DEMO_FORCE_SANDBOX: true
+      RENTRI_DEMO_NO_HTTP: true
+      RENTRI_API_STUB: true
+      RENTRI_FIRMA_STUB: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, pdo_pgsql, sqlite, pgsql
+          coverage: none
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Configure demo environment
+        run: |
+          cp .env.demo.example .env
+          php artisan key:generate --ansi
+
+      - name: Build frontend assets
+        run: npm run build
+
+      - name: Prepare database
+        run: |
+          php artisan migrate --force --ansi
+          php artisan db:seed --force --ansi
+
+      - name: Seed demo fixtures
+        run: php artisan rentri:demo-seed --fresh --ansi
+
+      - name: Demo preflight (post-deploy health)
+        run: php artisan rentri:preflight --demo --require-seed --ansi
+
+      - name: Run test suite
+        run: php artisan test --ansi

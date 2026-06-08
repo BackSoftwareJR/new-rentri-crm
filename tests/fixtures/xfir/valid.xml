@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xfir xmlns="https://www.rentri.gov.it/schema/xfir/v1.0">
+    <versione>1.0</versione>
+    <numero_fir>SITE-TEST-BLK-01-0001</numero_fir>
+    <codice_blocco>BLK-01</codice_blocco>
+    <progressivo>1</progressivo>
+    <identificativo>RSSMRA80A01H501Z</identificativo>
+    <num_iscr_sito>SITE-TEST</num_iscr_sito>
+    <data_vidimazione>2026-06-01</data_vidimazione>
+    <peso_partenza_kg>20</peso_partenza_kg>
+    <protocollo_rentri>STUB-PROTO-001</protocollo_rentri>
+    <trasporto>
+        <id>1</id>
+        <codice_cer>16.01.04</codice_cer>
+        <quantita_kg>20</quantita_kg>
+        <destinatario>Impianto Test</destinatario>
+    </trasporto>
+</xfir>

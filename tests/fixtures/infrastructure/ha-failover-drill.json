@@ -1,0 +1,19 @@
+{
+    "sprint": 118,
+    "description": "Contratto esercitazione failover multi-istanza — health, switch traffic, recovery",
+    "health_endpoint": "GET /up",
+    "env_required": {
+        "HA_MIN_APP_INSTANCES": 2,
+        "HA_PRIMARY_APP_URL": "https://app1.staging.example.com",
+        "HA_SECONDARY_APP_URL": "https://app2.staging.example.com",
+        "SESSION_DRIVER": "redis",
+        "QUEUE_CONNECTION": "redis"
+    },
+    "phases": [
+        "health",
+        "traffic_switch",
+        "recovery"
+    ],
+    "artisan_command": "ha:failover-drill --dry-run --probe",
+    "runbook": "docs/HA-FAILOVER-DRILL-RUNBOOK.md"
+}

@@ -1,0 +1,22 @@
+{
+  "description": "COSE_Sign1 envelope in payload_firmato (RENTRI xFIR trasmissione MASE)",
+  "required": ["typ", "protected", "payload", "signature"],
+  "optional": ["alg"],
+  "crm_excluded_keys": ["api_mode", "numero_fir", "firmato_at", "stub"],
+  "properties": {
+    "typ": "string",
+    "alg": "string",
+    "protected": "string",
+    "payload": "string",
+    "signature": "string"
+  },
+  "typ_enum": ["COSE_Sign1"],
+  "protected_decoded_required": ["alg", "typ"],
+  "example": {
+    "typ": "COSE_Sign1",
+    "alg": "STUB-HMAC-SHA256",
+    "protected": "eyJhbGciOiJTVFVILUhNQUMtU0hBMjU2IiwidHlwIjoiQ09TRV9TaWduMSJ9",
+    "payload": "eyJ0ZXN0Ijp0cnVlfQ",
+    "signature": "stub:xfir-mase-fixture"
+  }
+}
