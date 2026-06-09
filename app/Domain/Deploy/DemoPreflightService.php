@@ -150,12 +150,16 @@ class DemoPreflightService
 
         $settings = RentriSetting::instance();
 
-        if ($this->runtimeMode->isApiStub($settings)) {
-            return $this->result('rentri_stub', 'ok', 'API RENTRI in stub — adatto a demo CI/staging.');
+        if (config('demo.rentri.live_sandbox', true)) {
+            if (blank($settings->cert_path_encrypted)) {
+                return $this->result('rentri_stub', 'warn', 'Palestra sandbox live — caricare certificato PKCS#12 DEMO in Impostazioni RENTRI.');
+            }
+
+            return $this->result('rentri_stub', 'ok', 'Integrazione live verso demoapi.rentri.gov.it (palestra operativa).');
         }
 
-        if ($settings->live_mode_enabled_at !== null) {
-            return $this->result('rentri_stub', 'warn', 'Modalità live attiva — richiede certificato sandbox MASE.');
+        if ($this->runtimeMode->isApiStub($settings)) {
+            return $this->result('rentri_stub', 'ok', 'API RENTRI in stub — adatto a demo CI/staging.');
         }
 
         return $this->result('rentri_stub', 'warn', 'RENTRI_API_STUB disabilitato — richiede certificato sandbox MASE.');

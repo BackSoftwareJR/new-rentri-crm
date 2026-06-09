@@ -421,14 +421,6 @@ class RentriApiClient implements RentriApiClientInterface
 
     protected function usesStub(): bool
     {
-        if (DemoContext::offlineNoHttp()) {
-            return true;
-        }
-
-        if (DemoContext::isSessionDemoActive()) {
-            return blank($this->settings()->cert_path_encrypted);
-        }
-
         return app(RentriRuntimeModeService::class)->isApiStub($this->settings());
     }
 

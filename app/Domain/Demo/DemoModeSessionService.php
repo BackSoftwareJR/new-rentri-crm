@@ -3,6 +3,8 @@
 namespace App\Domain\Demo;
 
 use App\Domain\Audit\ActivityLogService;
+use App\Jobs\RentriInitialSyncJob;
+use App\Models\RentriSetting;
 use App\Support\Demo\DemoContext;
 use App\Models\User;
 use RuntimeException;
@@ -50,14 +52,48 @@ class DemoModeSessionService
 
         session()->put(config('demo.session.key', 'demo_mode_active'), true);
 
+        $this->prepareRentriSandboxScope();
+
         app(ActivityLogService::class)->record(
             'rentri',
-            'Palestra operativa (demo) attivata — scope is_demo=true',
+            'Palestra operativa (demo) attivata — scope is_demo=true, API demoapi.rentri.gov.it',
             properties: [
-                'demo_source' => DemoContext::isDeployDemo() ? 'deploy_and_session' : 'session',
-                'user_email'  => $user->email,
+                'demo_source'      => DemoContext::isDeployDemo() ? 'deploy_and_session' : 'session',
+                'live_sandbox'     => DemoContext::usesLiveSandboxApi(),
+                'user_email'       => $user->email,
             ],
             userId: $user->id,
+        );
+    }
+
+    private function prepareRentriSandboxScope(): void
+    {
+        $settings = RentriSetting::instance();
+
+        $settings->update([
+            'ambiente'              => 'sandbox',
+            'live_mode_enabled_at'  => null,
+            'firma_live_enabled_at' => null,
+        ]);
+
+        if (! DemoContext::usesLiveSandboxApi()) {
+            return;
+        }
+
+        if (blank($settings->fresh()->cert_path_encrypted)) {
+            session()->flash(
+                'warning',
+                'Palestra attiva: collegamento a demoapi.rentri.gov.it. Carica il certificato sandbox in Impostazioni RENTRI per sincronizzare CER, blocchi FIR e vidima.',
+            );
+
+            return;
+        }
+
+        RentriInitialSyncJob::dispatch();
+
+        session()->flash(
+            'success',
+            'Palestra attiva: sincronizzazione CER e blocchi FIR da demoapi.rentri.gov.it avviata in background.',
         );
     }
 

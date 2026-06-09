@@ -24,6 +24,8 @@ return [
     ],
 
     'rentri' => [
+        // Palestra operativa: chiamate HTTP reali verso demoapi.rentri.gov.it (no fixture locali).
+        'live_sandbox'      => filter_var(env('RENTRI_DEMO_LIVE_SANDBOX', true), FILTER_VALIDATE_BOOL),
         'force_sandbox_api' => filter_var(env('RENTRI_DEMO_FORCE_SANDBOX', true), FILTER_VALIDATE_BOOL),
         'offline_no_http'   => filter_var(env('RENTRI_DEMO_NO_HTTP', false), FILTER_VALIDATE_BOOL),
     ],

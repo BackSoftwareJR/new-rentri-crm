@@ -38,6 +38,23 @@ class DemoContext
     }
 
     /**
+     * Palestra operativa: API RENTRI/FIR via demoapi (mTLS), non stub JSON locali.
+     * Richiede certificato PKCS#12 sandbox caricato in Impostazioni RENTRI.
+     */
+    public static function usesLiveSandboxApi(): bool
+    {
+        if (! self::isActive()) {
+            return false;
+        }
+
+        if (self::offlineNoHttp()) {
+            return false;
+        }
+
+        return (bool) config('demo.rentri.live_sandbox', true);
+    }
+
+    /**
      * @return list<class-string<\Illuminate\Database\Eloquent\Model>>
      */
     public static function scopedModels(): array

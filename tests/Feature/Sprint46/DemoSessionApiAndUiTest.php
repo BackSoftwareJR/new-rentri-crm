@@ -2,11 +2,14 @@
 
 namespace Tests\Feature\Sprint46;
 
+use App\Domain\Rentri\RentriOnboardingService;
+use App\Domain\Rentri\RentriRuntimeModeService;
 use App\Models\RentriSetting;
 use App\Models\User;
 use App\Services\Rentri\Contracts\RentriApiClientInterface;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use Livewire\Livewire;
 use Tests\Support\SeedsRentriCertificate;
 use Tests\TestCase;
@@ -15,9 +18,23 @@ class DemoSessionApiAndUiTest extends TestCase
 {
     use SeedsRentriCertificate;
 
+    public function test_session_demo_uses_live_sandbox_not_local_stub(): void
+    {
+        Config::set('demo.enabled', false);
+        Config::set('demo.rentri.live_sandbox', true);
+        Config::set('services.rentri.api_stub', true);
+        session([config('demo.session.key') => true]);
+
+        $runtime = app(RentriRuntimeModeService::class);
+
+        $this->assertFalse($runtime->isApiStub());
+        $this->assertSame('sandbox_live', $runtime->apiModeKind());
+    }
+
     public function test_session_demo_forces_sandbox_url_with_certificate(): void
     {
         Config::set('demo.enabled', false);
+        Config::set('demo.rentri.live_sandbox', true);
         Config::set('services.rentri.api_stub', false);
         session([config('demo.session.key') => true]);
 
@@ -74,6 +91,8 @@ class DemoSessionApiAndUiTest extends TestCase
     public function test_livewire_toggle_activates_session_demo(): void
     {
         Config::set('demo.allow_session_toggle', true);
+        Config::set('demo.rentri.live_sandbox', true);
+        Queue::fake();
 
         $user = User::where('email', 'segreteria@example.com')->firstOrFail();
 
@@ -83,5 +102,23 @@ class DemoSessionApiAndUiTest extends TestCase
             ->assertHasNoErrors();
 
         $this->assertTrue(session(config('demo.session.key')));
+        $this->assertSame('sandbox', RentriSetting::instance()->ambiente);
+    }
+
+    public function test_palestra_forces_sandbox_ambiente_on_operator_save(): void
+    {
+        Config::set('demo.enabled', false);
+        session([config('demo.session.key') => true]);
+
+        app(RentriOnboardingService::class)->saveOperatorData([
+            'ambiente'        => 'produzione',
+            'cf'              => '12345678901',
+            'cf_operatore'    => 'RSSMRA80A01H501Z',
+            'piva'            => '12345678901',
+            'ragione_sociale' => 'Test Demo',
+            'num_iscr_sito'   => 'DEMO-SITE-001',
+        ]);
+
+        $this->assertSame('sandbox', RentriSetting::instance()->ambiente);
     }
 }

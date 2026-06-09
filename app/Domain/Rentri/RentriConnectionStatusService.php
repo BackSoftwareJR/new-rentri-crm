@@ -3,6 +3,7 @@
 namespace App\Domain\Rentri;
 
 use App\Models\RentriSetting;
+use App\Support\Demo\DemoContext;
 use App\Services\Rentri\Contracts\RentriCertificateServiceInterface;
 
 class RentriConnectionStatusService
@@ -53,9 +54,13 @@ class RentriConnectionStatusService
         }
 
         if (blank($settings->num_iscr_sito) || blank($settings->cert_path_encrypted)) {
+            $label = DemoContext::usesLiveSandboxApi()
+                ? 'Palestra sandbox live — caricare certificato PKCS#12 DEMO da rentri.gov.it/demo'
+                : 'Non configurato — completare dati operatore e certificato';
+
             return [
                 'state'         => self::STATE_NOT_CONFIGURED,
-                'label'         => 'Non configurato — completare dati operatore e certificato',
+                'label'         => $label,
                 'api_mode'      => 'live',
                 'ambiente'      => $settings->ambiente,
                 'certificato'   => $this->certLabel($settings),

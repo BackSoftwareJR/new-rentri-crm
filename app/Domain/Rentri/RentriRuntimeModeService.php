@@ -13,11 +13,11 @@ class RentriRuntimeModeService
             return true;
         }
 
-        $settings ??= RentriSetting::instance();
-
-        if (DemoContext::isSessionDemoActive() && blank($settings->cert_path_encrypted)) {
-            return true;
+        if (DemoContext::usesLiveSandboxApi()) {
+            return false;
         }
+
+        $settings ??= RentriSetting::instance();
 
         if ($settings->live_mode_enabled_at !== null) {
             return false;
@@ -29,6 +29,10 @@ class RentriRuntimeModeService
     public function isFirmaStub(?RentriSetting $settings = null): bool
     {
         $settings ??= RentriSetting::instance();
+
+        if (DemoContext::usesLiveSandboxApi() && ! blank($settings->firma_cert_path_encrypted)) {
+            return false;
+        }
 
         if ($settings->firma_live_enabled_at !== null) {
             return false;
@@ -52,18 +56,20 @@ class RentriRuntimeModeService
     public function apiModeDisplayLabel(?RentriSetting $settings = null): string
     {
         return match ($this->apiModeKind($settings)) {
-            'offline' => 'demo offline',
-            'stub'    => 'stub sandbox',
-            default   => 'RENTRI live',
+            'offline'       => 'demo offline',
+            'sandbox_live'  => 'RENTRI sandbox live',
+            'stub'          => 'stub sandbox',
+            default         => 'RENTRI live',
         };
     }
 
     public function apiModeDisplayVariant(?RentriSetting $settings = null): string
     {
         return match ($this->apiModeKind($settings)) {
-            'offline' => 'warning',
-            'stub'    => 'info',
-            default   => 'success',
+            'offline'      => 'warning',
+            'sandbox_live' => 'success',
+            'stub'         => 'info',
+            default        => 'success',
         };
     }
 
@@ -77,12 +83,16 @@ class RentriRuntimeModeService
     }
 
     /**
-     * @return 'offline'|'stub'|'live'
+     * @return 'offline'|'sandbox_live'|'stub'|'live'
      */
     public function apiModeKind(?RentriSetting $settings = null): string
     {
         if (DemoContext::offlineNoHttp()) {
             return 'offline';
+        }
+
+        if (DemoContext::usesLiveSandboxApi()) {
+            return 'sandbox_live';
         }
 
         return $this->isApiStub($settings) ? 'stub' : 'live';

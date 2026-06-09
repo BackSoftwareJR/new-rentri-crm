@@ -5,6 +5,7 @@ namespace App\Domain\Rentri;
 use App\Domain\Magazzino\MagazzinoService;
 use App\Jobs\RentriInitialSyncJob;
 use App\Models\RentriSetting;
+use App\Support\Demo\DemoContext;
 use App\Services\Rentri\Contracts\RentriApiClientInterface;
 use App\Services\Rentri\Contracts\RentriCertificateServiceInterface;
 use App\Services\Rentri\Contracts\RentriCodificheSyncInterface;
@@ -36,6 +37,10 @@ class RentriOnboardingService
      */
     public function saveOperatorData(array $data): RentriSetting
     {
+        if (DemoContext::isActive()) {
+            $data['ambiente'] = 'sandbox';
+        }
+
         $settings = RentriSetting::instance();
 
         $settings->update([
@@ -62,6 +67,10 @@ class RentriOnboardingService
         $settings->update([
             'onboarding_step_completed' => max($settings->onboarding_step_completed, 2),
         ]);
+
+        if (DemoContext::usesLiveSandboxApi()) {
+            RentriInitialSyncJob::dispatch();
+        }
 
         return $settings->fresh();
     }

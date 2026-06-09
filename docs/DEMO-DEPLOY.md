@@ -36,10 +36,11 @@ DB_DATABASE=rentri_crm_demo
 DB_USERNAME=postgres
 DB_PASSWORD=secret
 
-# RENTRI — sandbox MASE o stub locale
+# RENTRI — integrazione live sandbox MASE (palestra operativa)
+RENTRI_DEMO_LIVE_SANDBOX=true
 RENTRI_BASE_URL_SANDBOX=https://demoapi.rentri.gov.it
 RENTRI_BASE_URL_PRODUCTION=https://api.rentri.gov.it
-RENTRI_API_STUB=true
+RENTRI_API_STUB=false
 RENTRI_FIRMA_STUB=true
 RENTRI_AUTH_MODE=mtls
 RENTRI_VERIFY_SSL=true
@@ -86,9 +87,11 @@ php artisan rentri:demo-seed
 2. Step guidati: impostazioni → blocchi FIR → trasporto → vidima/firma → registro
 3. Banner giallo persistente: «Modalità DEMO»
 
-Certificato sandbox MASE (opzionale): upload in `/segreteria/impostazioni/rentri` per test API live su `demoapi.rentri.gov.it`.
+**Certificato sandbox MASE (obbligatorio per integrazione reale):** upload in `/segreteria/impostazioni/rentri` — CER, blocchi FIR e vidima da `demoapi.rentri.gov.it`.
 
-Con `RENTRI_DEMO_NO_HTTP=true` tutte le chiamate restano stub locali — utile per demo offline.
+Con `RENTRI_DEMO_LIVE_SANDBOX=true` (default) la palestra operativa **non** usa fixture JSON locali.
+
+Con `RENTRI_DEMO_NO_HTTP=true` tutte le chiamate restano stub locali — utile solo per demo offline/CI senza rete.
 
 ---
 

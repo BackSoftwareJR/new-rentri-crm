@@ -4,6 +4,7 @@ namespace App\Domain\Rentri;
 
 use App\Domain\Audit\ActivityLogService;
 use App\Models\RentriSetting;
+use App\Support\Demo\DemoContext;
 use Illuminate\Validation\ValidationException;
 
 class RentriLiveModeService
@@ -15,6 +16,12 @@ class RentriLiveModeService
 
     public function enable(RentriSetting $settings, int $userId): RentriSetting
     {
+        if (DemoContext::usesLiveSandboxApi()) {
+            throw ValidationException::withMessages([
+                'live' => 'In palestra operativa le API sono già collegate a demoapi.rentri.gov.it. Il passaggio live produzione non è disponibile.',
+            ]);
+        }
+
         if (! $this->readiness->canEnableLiveMode($settings)) {
             throw ValidationException::withMessages([
                 'live' => 'Checklist pre-produzione non superata. Verificare certificati, health check e ambiente produzione.',

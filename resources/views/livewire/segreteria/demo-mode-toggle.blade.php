@@ -43,7 +43,9 @@
                     <h3 class="demo-mode-modal-title">Attivare la palestra operativa?</h3>
                     <p class="demo-mode-modal-text">
                         Il CRM passerà allo scope <strong>is_demo=true</strong>.
-                        Le API RENTRI useranno solo <strong>demoapi.rentri.gov.it</strong>.
+                        CER, blocchi FIR e vidima verranno letti da <strong>demoapi.rentri.gov.it</strong>
+                        (ambiente DEMO MASE, mai produzione).
+                        Serve il <strong>certificato PKCS#12 sandbox</strong> caricato in Impostazioni RENTRI.
                         I dati produzione restano isolati e non modificabili.
                     </p>
                     <div class="demo-mode-modal-actions">
